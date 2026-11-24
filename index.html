@@ -192,6 +192,24 @@
   .history-detail .dline { margin-top: 8px; }
   .history-detail .dname { color: #1f6feb; font-weight: 600; }
   .history-detail .dtext { white-space: pre-wrap; word-break: break-word; margin: 2px 0 0; font-family: inherit; }
+  .cal-detail-date { font-size: 14px; font-weight: 600; color: #444; margin-bottom: 10px; }
+  .cal-draft-tag { font-size: 11px; color: #999; font-weight: 400; margin-left: 6px; }
+  .cal-section-title {
+    font-size: 12px; font-weight: 600; color: #555; margin: 14px 0 8px;
+    padding-left: 8px; border-left: 3px solid #1f6feb;
+  }
+  .cal-section-title.hard { border-left-color: #e8590c; }
+  .cal-entry { background: #fafbfc; border-radius: 8px; padding: 9px 10px; margin-bottom: 8px; }
+  .cal-entry-head { display: flex; align-items: center; gap: 6px; font-size: 13px; flex-wrap: wrap; }
+  .cal-entry-name { font-weight: 600; color: #1f6feb; }
+  .cal-entry-cnt { font-size: 11px; color: #1f6feb; background: #e8f0fe; border-radius: 10px; padding: 1px 7px; }
+  .cal-entry-pts { margin-left: auto; font-size: 12px; color: #333; font-weight: 600; }
+  .cal-entry-note {
+    white-space: pre-wrap; word-break: break-word; font-size: 12px; color: #555;
+    line-height: 1.6; margin-top: 6px; padding: 6px 8px; background: #fff; border-radius: 6px;
+  }
+  .cal-hard-list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .cal-hard-chip { background: #fff1e6; color: #c2410c; border-radius: 8px; padding: 6px 10px; font-size: 12px; }
   .empty { text-align: center; color: #999; font-size: 13px; padding: 20px; }
   .toast {
     position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
@@ -1021,14 +1039,38 @@
     }
     var s = selfScore(data.rec);
     var h = hardScore(data.rec);
+    var selfLines = [];
+    state.config.selfItems.forEach(function(i){
+      var cnt = Number(data.rec.self[i.id]) || 0;
+      var note = (data.rec.notes && data.rec.notes[i.id]) ? data.rec.notes[i.id] : '';
+      if (cnt <= 0 && !note) return;
+      selfLines.push('<div class="cal-entry">' +
+        '<div class="cal-entry-head">' +
+          '<span class="cal-entry-name">' + esc(i.name) + '</span>' +
+          '<span class="cal-entry-cnt">×' + cnt + '</span>' +
+          '<span class="cal-entry-pts">' + fmt(round2(cnt * i.weight)) + ' 分</span>' +
+        '</div>' +
+        '<div class="cal-entry-note">' + (note ? esc(note) : '<span style="color:#aaa">未填写具体事项</span>') + '</div>' +
+      '</div>');
+    });
+    var hardLines = [];
+    state.config.hardItems.forEach(function(i){
+      var v = Number(data.rec.hard[i.id]) || 0;
+      if (v > 0) hardLines.push('<span class="cal-hard-chip">' + esc(i.name) + ' ' + fmt(v) + '</span>');
+    });
+    var detail = '';
+    if (selfLines.length) detail += '<div class="cal-section-title">自强事件</div>' + selfLines.join('');
+    if (hardLines.length) detail += '<div class="cal-section-title hard">吃苦时长</div><div class="cal-hard-list">' + hardLines.join('') + '</div>';
+    if (!detail) detail = '<div class="empty" style="padding:12px 0">当天暂无明细</div>';
+
     box.innerHTML =
-      '<div class="dline"><span class="dname">' + key + ' ' + weekdayName(new Date(key + 'T00:00:00')) + '</span>' +
-      (data.isDraft ? ' <span style="font-size:11px;color:#999">（今日草稿，未保存）</span>' : '') + '</div>' +
-      '<div class="period-metrics" style="margin:8px 0 10px">' +
+      '<div class="cal-detail-date">' + key + ' ' + weekdayName(new Date(key + 'T00:00:00')) +
+      (data.isDraft ? '<span class="cal-draft-tag">今日草稿，未保存</span>' : '') + '</div>' +
+      '<div class="period-metrics" style="margin:0 0 4px">' +
         '<div class="m"><div class="k">自强</div><div class="v self">' + fmt(s) + '</div></div>' +
         '<div class="m"><div class="k">吃苦</div><div class="v hard">' + fmt(h) + '</div></div>' +
         '<div class="m"><div class="k">指数</div><div class="v idx">' + fmtPct(s, h) + '</div></div>' +
-      '</div>' + buildDailyDetail(data.rec);
+      '</div>' + detail;
   }
 
   function renderCalendar(){
