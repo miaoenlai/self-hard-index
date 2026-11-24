@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1f6feb">
+<title>自强吃苦指数</title>
+<link rel="manifest" href="data:application/manifest+json,{%22name%22:%22自强吃苦指数%22,%22short_name%22:%22自强吃苦%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23f5f7fa%22,%22theme_color%22:%22%231f6feb%22,%22icons%22:[{%22src%22:%22data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231f6feb'/%3E%3Ctext x='50' y='68' font-size='52' text-anchor='middle' fill='white'%3E强%3C/text%3E%3C/svg%3E%22,%22sizes%22:%22192x192%22,%22type%22:%22image/svg+xml%22}]}">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    color: #1a1a1a; padding-bottom: 80px;
+    background-color: #f5f7fa;
+    background-image: radial-gradient(#dfe6f5 1px, transparent 1px), linear-gradient(135deg, #f7f9ff, #fff8f1);
+    background-size: 22px 22px, 100% 100%;
+  }
+  header {
+    background: linear-gradient(120deg, #1f6feb, #7b2ff7);
+    color: #fff; padding: 16px 16px 12px;
+    position: sticky; top: 0; z-index: 10; overflow: hidden;
+  }
+  header::before {
+    content: ''; position: absolute; width: 150px; height: 150px; border-radius: 50%;
+    background: rgba(255,255,255,.12); right: -40px; top: -60px;
+  }
+  header > * { position: relative; z-index: 1; }
+  header h1 { margin: 0; font-size: 18px; font-weight: 600; }
+  header .date { font-size: 13px; opacity: .85; margin-top: 4px; }
+  .card {
+    background: #fff; border-radius: 14px; margin: 12px; padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(60,80,140,.07);
+  }
+  .card h2 { margin: 0 0 10px; font-size: 15px; color: #555; font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+  .card h2::before {
+    content: ''; display: inline-block; width: 4px; height: 14px; border-radius: 2px;
+    background: linear-gradient(#1f6feb, #7b2ff7); margin-right: 7px; vertical-align: -2px;
+  }
+  .card h2 .link { font-size: 12px; color: #1f6feb; font-weight: 500; }
+  .score-row { display: flex; gap: 10px; }
+  .score-box { flex: 1; text-align: center; padding: 12px 8px; border-radius: 12px; }
+  .score-box.self { background: linear-gradient(135deg, #e8f0fe, #d9e7ff); }
+  .score-box.hard { background: linear-gradient(135deg, #fff1e6, #ffe3cc); }
+  .score-box .num { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .score-box.self .num { color: #1f6feb; }
+  .score-box.hard .num { color: #e8590c; }
+  .score-box .label { font-size: 12px; color: #666; margin-top: 4px; }
+  .note { font-size: 11px; color: #999; margin-top: 8px; line-height: 1.5; }
+  .index-strip {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    margin-top: 10px; padding: 10px 12px; border-radius: 12px;
+    background: linear-gradient(90deg, #e8f0fe, #f3e9ff, #fff1e6);
+  }
+  .index-strip .formula { font-size: 12px; color: #666; line-height: 1.5; }
+  .index-strip .val { font-size: 22px; font-weight: 700; color: #7b2ff7; white-space: nowrap; }
+  .period-card { background: #fafbfc; border: 1px solid #eee; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .period-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+  .period-metrics { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .period-metrics .m { text-align: center; }
+  .period-metrics .k { font-size: 11px; color: #888; }
+  .period-metrics .v { font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .period-metrics .v.self { color: #1f6feb; }
+  .period-metrics .v.hard { color: #e8590c; }
+  .period-metrics .v.idx { color: #7b2ff7; }
+  .seg { display: flex; background: #f5f7fa; border-radius: 8px; padding: 3px; margin-bottom: 10px; }
+  .seg button {
+    flex: 1; padding: 7px 2px; border: none; background: transparent; border-radius: 6px;
+    font-size: 13px; color: #666; cursor: pointer;
+  }
+  .seg button.active { background: #fff; color: #1f6feb; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .month-block { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .month-block:last-child { border-bottom: none; }
+  .month-head { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; color: #444; }
+  .month-head .total { font-size: 12px; color: #888; font-weight: 400; }
+  .stack-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #f0f0f0; margin: 8px 0 6px; }
+  .stack-seg { height: 100%; display: block; }
+  .month-items { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .month-item {
+    display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555;
+    background: #fafbfc; border-radius: 6px; padding: 6px;
+  }
+  .month-item .mname { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .month-item .mval { font-weight: 600; color: #333; white-space: nowrap; }
+  .month-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+  .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .cal-title { font-size: 16px; font-weight: 700; color: #333; }
+  .cal-nav-btns { display: flex; gap: 6px; }
+  .cal-grid { background: #fff; border-radius: 12px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06); }
+  .cal-weekdays, .cal-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-weekdays div { text-align: center; font-size: 11px; color: #999; padding: 4px 0; }
+  .cal-cell {
+    min-height: 54px; border-radius: 9px; padding: 5px 2px; text-align: center;
+    background: #fafbfc; border: 1px solid transparent; cursor: pointer;
+  }
+  .cal-cell.empty-cell { background: transparent; cursor: default; }
+  .cal-day { font-size: 12px; color: #666; }
+  .cal-idx { font-size: 13px; font-weight: 700; margin-top: 4px; color: #6a2fc0; }
+  .cal-cell.today { border-color: #1f6feb; }
+  .cal-cell.draft { border-style: dashed; }
+  .cal-cell.lv1 { background: #f5f0ff; }
+  .cal-cell.lv2 { background: #e9dcff; }
+  .cal-cell.lv3 { background: #d8c0ff; }
+  .cal-cell.lv4 { background: #bd97ff; }
+  .cal-cell.lv4 .cal-idx { color: #4b1485; }
+  .cal-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: #999; }
+  .cal-legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+  .item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 8px;
+  }
+  .item:last-child { border-bottom: none; }
+  .item .name { font-size: 14px; flex: 1; padding-right: 6px; min-width: 0; word-break: break-all; }
+  .item .name small { display: block; color: #999; font-size: 11px; margin-top: 2px; }
+  .item-block { padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+  .item-block:last-child { border-bottom: none; }
+  .item-block .item { padding: 2px 0; border-bottom: none; }
+  .note-wrap { margin-top: 6px; }
+  .note-wrap textarea {
+    width: 100%; min-height: 54px; border: 1px solid #e8e8e8; border-radius: 8px;
+    background: #fafbfc; padding: 8px 10px; font-size: 13px; line-height: 1.5;
+    color: #333; resize: vertical; font-family: inherit; box-sizing: border-box;
+  }
+  .note-wrap textarea:focus { outline: none; border-color: #1f6feb; background: #fff; }
+  .stepper { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .stepper button {
+    width: 34px; height: 34px; border-radius: 8px; border: 1px solid #ddd;
+    background: #fafafa; font-size: 19px; line-height: 1; color: #333;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .stepper button:active { background: #eee; }
+  .stepper input[type=number] {
+    width: 60px; text-align: center; font-size: 15px; padding: 6px 4px;
+    border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a;
+  }
+  .unit { font-size: 12px; color: #999; min-width: 24px; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .summary-item { background: #fafbfc; border-radius: 10px; padding: 10px 12px; border: 1px solid #eee; }
+  .summary-item .k { font-size: 12px; color: #888; }
+  .summary-item .v { font-size: 20px; font-weight: 700; margin-top: 2px; }
+  .summary-item .v.self { color: #1f6feb; }
+  .summary-item .v.hard { color: #e8590c; }
+  .actions { display: flex; gap: 10px; margin: 12px; flex-wrap: wrap; }
+  .actions button {
+    flex: 1; min-width: 130px; padding: 12px; border-radius: 11px; border: none;
+    font-size: 15px; font-weight: 600; cursor: pointer;
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .actions button:active { transform: translateY(1px); }
+  .btn-primary {
+    background: linear-gradient(135deg, #1f6feb, #7b2ff7); color: #fff;
+    box-shadow: 0 3px 10px rgba(31,111,235,.28);
+  }
+  .btn-secondary { background: #fff; color: #1f6feb; border: 1px solid #1f6feb; }
+  .btn-danger { background: #fff; color: #d93025; border: 1px solid #d93025; }
+  .history { margin: 12px; }
+  .history-item {
+    background: #fff; border-radius: 10px; margin-bottom: 8px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.04); font-size: 14px; overflow: hidden;
+  }
+  .history-head {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 12px; cursor: pointer;
+  }
+  .history-head .d { color: #666; }
+  .history-head .s.self { color: #1f6feb; font-weight: 600; }
+  .history-head .s.hard { color: #e8590c; font-weight: 600; }
+  .history-detail {
+    padding: 0 12px 12px; font-size: 13px; color: #555;
+    border-top: 1px solid #f5f5f5; line-height: 1.6;
+  }
+  .history-detail .dline { margin-top: 8px; }
+  .history-detail .dname { color: #1f6feb; font-weight: 600; }
+  .history-detail .dtext { white-space: pre-wrap; word-break: break-word; margin: 2px 0 0; font-family: inherit; }
+  .empty { text-align: center; color: #999; font-size: 13px; padding: 20px; }
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,.8); color: #fff; padding: 8px 16px; border-radius: 20px;
+    font-size: 13px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+  .tabs { display: flex; margin: 12px; background: #fff; border-radius: 10px; padding: 4px; }
+  .tabs button {
+    flex: 1; padding: 8px 2px; border: none; background: transparent; border-radius: 8px;
+    font-size: 14px; color: #666; cursor: pointer;
+  }
+  .tabs button.active { background: #1f6feb; color: #fff; font-weight: 600; }
+  .set-row { padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+  .set-row:last-child { border-bottom: none; }
+  .set-line { display: flex; align-items: center; gap: 6px; }
+  .set-line.sub { margin-top: 6px; flex-wrap: wrap; }
+  .set-line input[type=text], .set-line input[type=number], .set-line select {
+    border: 1px solid #ddd; border-radius: 8px; padding: 7px 8px; font-size: 13px;
+    background: #fff; color: #1a1a1a; min-width: 0;
+  }
+  .set-name { flex: 1; }
+  .set-hint { flex: 1; }
+  .set-weight { width: 58px; text-align: center; }
+  .mini-btn {
+    border: 1px solid #ddd; background: #fafafa; border-radius: 8px;
+    min-width: 30px; height: 32px; font-size: 13px; cursor: pointer; color: #555;
+  }
+  .mini-btn.danger { color: #d93025; border-color: #f3c2be; background: #fff; padding: 0 8px; }
+  .mini-btn.primary { color: #1f6feb; border-color: #b9d2fb; background: #fff; padding: 0 10px; font-weight: 600; }
+  .mini-btn:active { background: #eee; }
+  .field-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+  .field-row select { border: 1px solid #ddd; border-radius: 8px; padding: 7px 8px; background: #fff; color: #1a1a1a; }
+</style>
+</head>
+<body>
+<header>
+  <h1>自强吃苦指数</h1>
+  <div class="date" id="todayLabel"></div>
+</header>
+
+<div class="tabs">
+  <button class="active" data-tab="record">记录</button>
+  <button data-tab="stats">统计</button>
+  <button data-tab="calendar">日历</button>
+  <button data-tab="history">历史</button>
+  <button data-tab="settings">设置</button>
+</div>
+
+<!-- 记录页 -->
+<div id="tab-record">
+  <div class="card">
+    <h2>今日分值</h2>
+    <div class="score-row">
+      <div class="score-box self">
+        <div class="num" id="todaySelf">0</div>
+        <div class="label">自强分</div>
+      </div>
+      <div class="score-box hard">
+        <div class="num" id="todayHard">0</div>
+        <div class="label">吃苦时长</div>
+      </div>
+    </div>
+    <div class="index-strip">
+      <span class="formula">自强吃苦指数 = 自强事件分总和 ÷ 吃苦分总和</span>
+      <span class="val" id="todayIndex">—</span>
+    </div>
+    <div class="note">自强分 = 各栏目次数 × 每次分值之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；「保存今日」会一并保存整页内容，填错可直接修改，或用「清空今日」整体重填。</div>
+  </div>
+
+  <div class="card">
+    <h2>自强事件 <span class="link" id="goSettingsSelf">自定义栏目 ›</span></h2>
+    <div id="selfItems"></div>
+  </div>
+
+  <div class="card">
+    <h2>吃苦时长<span class="link" id="goSettingsHard">自定义栏目 ›</span></h2>
+    <div id="hardItems"></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="saveBtn">保存今日</button>
+    <button class="btn-secondary" id="resetBtn">清空今日</button>
+  </div>
+</div>
+
+<!-- 统计页 -->
+<div id="tab-stats" style="display:none">
+  <div class="card">
+    <h2>汇总（自强 / 吃苦 / 指数）</h2>
+    <div class="period-card">
+      <div class="period-title">今日</div>
+      <div class="period-metrics">
+        <div class="m"><div class="k">自强</div><div class="v self" id="dSelf">0</div></div>
+        <div class="m"><div class="k">吃苦</div><div class="v hard" id="dHard">0</div></div>
+        <div class="m"><div class="k">指数</div><div class="v idx" id="dIndex">—</div></div>
+      </div>
+    </div>
+    <div class="period-card">
+      <div class="period-title">本周</div>
+      <div class="period-metrics">
+        <div class="m"><div class="k">自强</div><div class="v self" id="wSelf">0</div></div>
+        <div class="m"><div class="k">吃苦</div><div class="v hard" id="wHard">0</div></div>
+        <div class="m"><div class="k">指数</div><div class="v idx" id="wIndex">—</div></div>
+      </div>
+    </div>
+    <div class="period-card">
+      <div class="period-title">本月</div>
+      <div class="period-metrics">
+        <div class="m"><div class="k">自强</div><div class="v self" id="mSelf">0</div></div>
+        <div class="m"><div class="k">吃苦</div><div class="v hard" id="mHard">0</div></div>
+        <div class="m"><div class="k">指数</div><div class="v idx" id="mIndex">—</div></div>
+      </div>
+    </div>
+    <div class="period-card">
+      <div class="period-title">本年</div>
+      <div class="period-metrics">
+        <div class="m"><div class="k">自强</div><div class="v self" id="ySelf">0</div></div>
+        <div class="m"><div class="k">吃苦</div><div class="v hard" id="yHard">0</div></div>
+        <div class="m"><div class="k">指数</div><div class="v idx" id="yIndex">—</div></div>
+      </div>
+    </div>
+    <div class="period-card">
+      <div class="period-title">累计</div>
+      <div class="period-metrics">
+        <div class="m"><div class="k">自强</div><div class="v self" id="aSelf">0</div></div>
+        <div class="m"><div class="k">吃苦</div><div class="v hard" id="aHard">0</div></div>
+        <div class="m"><div class="k">指数</div><div class="v idx" id="aIndex">—</div></div>
+      </div>
+    </div>
+    <div class="note">周起始日可在「设置」里切换为周一或周日。吃苦分为 0 时指数显示为「—」。</div>
+  </div>
+  <div class="card">
+    <h2>自强事件回顾 <span class="link">四类分值 / 占比</span></h2>
+    <div class="seg" id="reviewGran">
+      <button type="button" data-gran="w">周度</button>
+      <button type="button" data-gran="m" class="active">月度</button>
+      <button type="button" data-gran="y">年度</button>
+    </div>
+    <div id="reviewMonths"></div>
+  </div>
+  <div class="card">
+    <h2>每日明细 <span class="link">点某一天查看当天具体事件</span></h2>
+    <div class="daily-list" id="dailyList"></div>
+  </div>
+  <div class="actions">
+    <button class="btn-secondary" id="exportCsvBtn">导出 CSV</button>
+    <button class="btn-secondary" id="exportJsonBtn">备份 JSON</button>
+    <button class="btn-secondary" id="importJsonBtn">导入 JSON</button>
+    <button class="btn-danger" id="clearAllBtn">清空全部记录</button>
+  </div>
+  <div class="card">
+    <div class="note">建议定期点「备份 JSON」，它会连同你自定义的栏目一起保存；CSV 只含表格明细。</div>
+  </div>
+</div>
+
+<!-- 日历页 -->
+<div id="tab-calendar" style="display:none">
+  <div class="card">
+    <h2>指数日历</h2>
+    <div class="cal-nav">
+      <div class="cal-title" id="calTitle"></div>
+      <div class="cal-nav-btns">
+        <button type="button" class="mini-btn" id="calPrev">‹</button>
+        <button type="button" class="mini-btn" id="calToday">今天</button>
+        <button type="button" class="mini-btn" id="calNext">›</button>
+      </div>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-weekdays" id="calWeekdays"></div>
+      <div class="cal-days" id="calDays"></div>
+    </div>
+    <div class="cal-legend">
+      <span>低</span>
+      <i style="background:#f5f0ff"></i><i style="background:#e9dcff"></i>
+      <i style="background:#d8c0ff"></i><i style="background:#bd97ff"></i>
+      <span>高</span>
+      <span style="margin-left:auto">虚线框 = 今日草稿</span>
+    </div>
+  </div>
+  <div class="card" id="calDetailCard">
+    <h2>当天详情</h2>
+    <div id="calDetail"></div>
+  </div>
+</div>
+
+<!-- 历史页 -->
+<div id="tab-history" style="display:none">
+  <div class="history daily-list" id="historyList"></div>
+</div>
+
+<!-- 设置页 -->
+<div id="tab-settings" style="display:none">
+  <div class="card">
+    <h2>自强栏目 <button class="mini-btn primary" id="addSelfBtn">+ 添加</button></h2>
+    <div id="selfSettings"></div>
+    <div class="note">改名、改每次分值都会立即生效；改分值会按新规则重新计算历史记录的自强分。删除栏目后，历史数据仍保留在 JSON 备份中，但不再计入统计。</div>
+  </div>
+
+  <div class="card">
+    <h2>吃苦时长栏目（小时） <button class="mini-btn primary" id="addHardBtn">+ 添加</button></h2>
+    <div id="hardSettings"></div>
+    <div class="note">所有吃苦栏目都按小时累加，可填小数，例如 1.5 小时 = 1 小时 30 分钟。</div>
+  </div>
+
+  <div class="card">
+    <h2>计算选项</h2>
+    <div class="field-row">
+      <span>吃苦加减步长</span>
+      <select id="hardStepSelect">
+        <option value="0.5">0.5 小时（30 分钟）</option>
+        <option value="1">1 小时</option>
+      </select>
+    </div>
+    <div class="field-row">
+      <span>一周起始日</span>
+      <select id="weekStartSelect">
+        <option value="1">周一</option>
+        <option value="0">周日</option>
+      </select>
+    </div>
+    <div class="actions" style="margin:10px 0 0">
+      <button class="btn-secondary" id="restoreDefaultsBtn">恢复默认栏目</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept="application/json,.json" style="display:none">
+
+<script>
+(function(){
+  'use strict';
+
+  var KEY = 'zqck_index_v2';
+  var OLD_KEY = 'zqck_index_v1';
+
+  function defaultConfig(){
+    return {
+      selfItems: [
+        { id: 'useful',  name: '主动做有用的事（含结果）', hint: '每做一件 +1', weight: 1 },
+        { id: 'learn',   name: '主动学习现用的知识', hint: '每获得一项 +1', weight: 1 },
+        { id: 'network', name: '主动认识一位人脉朋友', hint: '每认识一位 +1', weight: 1 },
+        { id: 'income',  name: '获得超额收入（平时时薪3倍）', hint: '每发生一次 +1', weight: 1 }
+      ],
+      hardItems: [
+        { id: 'work',    name: '工作时长' },
+        { id: 'commute', name: '通勤时长' },
+        { id: 'labor',   name: '劳动时长' }
+      ],
+      hardStep: 0.5,
+      weekStart: 1
+    };
+  }
+
+  function uid(prefix){
+    return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+
+  function esc(v){
+    return String(v == null ? '' : v)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function round2(n){
+    return Math.round((Number(n) || 0) * 100) / 100;
+  }
+
+  function fmt(n){
+    n = round2(n);
+    return String(n);
+  }
+
+  function calcIndex(self, hard){
+    hard = Number(hard) || 0;
+    if (hard <= 0) return null;
+    return round2((Number(self) || 0) / hard);
+  }
+
+  function fmtIndex(self, hard){
+    var v = calcIndex(self, hard);
+    return v === null ? '—' : fmt(v);
+  }
+
+  function normalize(s){
+    var d = defaultConfig();
+    var c = (s && s.config) || {};
+    var legacyConfig = !s || s.configVersion !== 2;
+    var selfItems = (Array.isArray(c.selfItems) && !legacyConfig) ? c.selfItems : d.selfItems;
+    var hardItems = Array.isArray(c.hardItems) ? c.hardItems : d.hardItems;
+    var cfg = {
+      selfItems: selfItems.filter(function(i){ return i && i.id && i.name; }).map(function(i){
+        var w = Number(i.weight);
+        return {
+          id: String(i.id), name: String(i.name), hint: String(i.hint || ''),
+          weight: isFinite(w) && w >= 0 ? w : 1
+        };
+      }),
+      hardItems: hardItems.filter(function(i){ return i && i.id && i.name; }).map(function(i){
+        return { id: String(i.id), name: String(i.name) };
+      }),
+      hardStep: Number(c.hardStep) === 1 ? 1 : 0.5,
+      weekStart: Number(c.weekStart) === 0 ? 0 : 1
+    };
+    if (!cfg.selfItems.length) cfg.selfItems = d.selfItems;
+    if (!cfg.hardItems.length) cfg.hardItems = d.hardItems;
+
+    var records = {};
+    var src = (s && s.records) || {};
+    Object.keys(src).forEach(function(k){
+      var r = src[k];
+      if (r && typeof r === 'object') {
+        records[k] = {
+          self: (r.self && typeof r.self === 'object') ? r.self : {},
+          hard: (r.hard && typeof r.hard === 'object') ? r.hard : {},
+          notes: (r.notes && typeof r.notes === 'object') ? r.notes : {}
+        };
+      }
+    });
+    return { version: 2, configVersion: 2, config: cfg, records: records };
+  }
+
+  function loadState(){
+    try {
+      var raw = localStorage.getItem(KEY);
+      if (raw) return normalize(JSON.parse(raw));
+    } catch(e) {}
+    try {
+      var oldRaw = localStorage.getItem(OLD_KEY);
+      if (oldRaw) {
+        var old = JSON.parse(oldRaw);
+        return normalize({ version: 2, config: defaultConfig(), records: old.records || {} });
+      }
+    } catch(e) {}
+    return normalize({ version: 2, config: defaultConfig(), records: {} });
+  }
+
+  var state = loadState();
+  var draft = null;
+  var draftDate = '';
+  var toastTimer;
+  var calYear = new Date().getFullYear();
+  var calMonth = new Date().getMonth();
+  var calSelected = todayStr();
+  var reviewGranularity = 'm';
+
+  function saveState(){
+    localStorage.setItem(KEY, JSON.stringify(state));
+  }
+
+  function fmtDate(d){
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  }
+  function todayStr(){ return fmtDate(new Date()); }
+  function weekdayName(d){
+    return ['周日','周一','周二','周三','周四','周五','周六'][d.getDay()];
+  }
+
+  function blankDraft(){
+    var d = { self: {}, hard: {}, notes: {} };
+    state.config.selfItems.forEach(function(i){ d.self[i.id] = 0; d.notes[i.id] = ''; });
+    state.config.hardItems.forEach(function(i){ d.hard[i.id] = 0; });
+    return d;
+  }
+
+  function ensureNotes(){
+    if (!draft.notes || typeof draft.notes !== 'object') draft.notes = {};
+  }
+
+  function ensureDraft(){
+    var t = todayStr();
+    if (draft && draftDate === t) return draft;
+    if (state.records[t]) draft = JSON.parse(JSON.stringify(state.records[t]));
+    else draft = blankDraft();
+    draftDate = t;
+    return draft;
+  }
+
+  function selfScore(rec){
+    if (!rec || !rec.self) return 0;
+    var sum = 0;
+    state.config.selfItems.forEach(function(i){
+      sum += (Number(rec.self[i.id]) || 0) * i.weight;
+    });
+    return round2(sum);
+  }
+
+  function hardScore(rec){
+    if (!rec || !rec.hard) return 0;
+    var sum = 0;
+    state.config.hardItems.forEach(function(i){
+      sum += Number(rec.hard[i.id]) || 0;
+    });
+    return round2(sum);
+  }
+
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 1600);
+  }
+
+  // ---------- 记录页 ----------
+  function renderTotals(){
+    var s = selfScore(draft);
+    var h = hardScore(draft);
+    document.getElementById('todaySelf').textContent = fmt(s);
+    document.getElementById('todayHard').textContent = fmt(h);
+    document.getElementById('todayIndex').textContent = fmtIndex(s, h);
+  }
+
+  function renderRecord(){
+    ensureDraft();
+    document.getElementById('todayLabel').textContent = todayStr() + ' · ' + weekdayName(new Date());
+
+    var selfBox = document.getElementById('selfItems');
+    ensureNotes();
+    selfBox.innerHTML = state.config.selfItems.map(function(i){
+      var v = Number(draft.self[i.id]) || 0;
+      var note = draft.notes[i.id] || '';
+      var hint = i.hint || ('每次 +' + fmt(i.weight) + ' 分');
+      return '<div class="item-block">' +
+        '<div class="item">' +
+          '<div class="name">' + esc(i.name) + '<small>' + esc(hint) + '</small></div>' +
+          '<div class="stepper">' +
+            '<button type="button" data-act="dec-s" data-id="' + esc(i.id) + '">−</button>' +
+            '<input type="number" min="0" step="1" value="' + v + '" data-input="self" data-id="' + esc(i.id) + '">' +
+            '<button type="button" data-act="inc-s" data-id="' + esc(i.id) + '">+</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="note-wrap">' +
+          '<textarea rows="2" data-note="' + esc(i.id) + '" placeholder="填写具体做了哪些事（可每行一件）">' + esc(note) + '</textarea>' +
+        '</div>' +
+      '</div>';
+    }).join('') || '<div class="empty">还没有自强栏目，去「设置」添加</div>';
+
+    var hardBox = document.getElementById('hardItems');
+    hardBox.innerHTML = state.config.hardItems.map(function(i){
+      var v = Number(draft.hard[i.id]) || 0;
+      return '<div class="item">' +
+        '<div class="name">' + esc(i.name) + '<small>单位：小时</small></div>' +
+        '<div class="stepper">' +
+          '<button type="button" data-act="dec-h" data-id="' + esc(i.id) + '">−</button>' +
+          '<input type="number" min="0" step="any" value="' + v + '" data-input="hard" data-id="' + esc(i.id) + '">' +
+          '<span class="unit">h</span>' +
+          '<button type="button" data-act="inc-h" data-id="' + esc(i.id) + '">+</button>' +
+        '</div></div>';
+    }).join('') || '<div class="empty">还没有吃苦栏目，去「设置」添加</div>';
+
+    renderTotals();
+  }
+
+  document.getElementById('selfItems').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    var id = btn.getAttribute('data-id');
+    var v = Number(draft.self[id]) || 0;
+    if (btn.getAttribute('data-act') === 'inc-s') v += 1;
+    else v = Math.max(0, v - 1);
+    draft.self[id] = v;
+    renderRecord();
+  });
+
+  document.getElementById('hardItems').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-act]');
+    if (!btn) return;
+    var id = btn.getAttribute('data-id');
+    var step = state.config.hardStep;
+    var v = Number(draft.hard[id]) || 0;
+    if (btn.getAttribute('data-act') === 'inc-h') v = round2(v + step);
+    else v = Math.max(0, round2(v - step));
+    draft.hard[id] = v;
+    renderRecord();
+  });
+
+  document.getElementById('hardItems').addEventListener('input', function(e){
+    var inp = e.target.closest('input[data-input="hard"]');
+    if (!inp) return;
+    var v = Number(inp.value);
+    draft.hard[inp.getAttribute('data-id')] = (isFinite(v) && v >= 0) ? round2(v) : 0;
+    renderTotals();
+  });
+
+  document.getElementById('selfItems').addEventListener('input', function(e){
+    var ta = e.target.closest('textarea[data-note]');
+    if (ta) {
+      ensureNotes();
+      draft.notes[ta.getAttribute('data-note')] = ta.value;
+      return;
+    }
+    var inp = e.target.closest('input[data-input="self"]');
+    if (!inp) return;
+    var v = Number(inp.value);
+    draft.self[inp.getAttribute('data-id')] = (isFinite(v) && v >= 0) ? Math.floor(v) : 0;
+    renderTotals();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', function(){
+    ensureDraft();
+    state.records[todayStr()] = JSON.parse(JSON.stringify(draft));
+    saveState();
+    renderAll();
+    toast('已保存 ' + todayStr());
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    if (!confirm('清空今日未保存的输入？')) return;
+    draft = blankDraft();
+    draftDate = todayStr();
+    renderRecord();
+  });
+
+  // ---------- 统计页 ----------
+  function startOfWeek(d){
+    var dt = new Date(d);
+    var diff = (dt.getDay() - state.config.weekStart + 7) % 7;
+    dt.setDate(dt.getDate() - diff);
+    dt.setHours(0,0,0,0);
+    return dt;
+  }
+  function inRange(dateStr, start, end){
+    var d = new Date(dateStr + 'T00:00:00');
+    return d >= start && d <= end;
+  }
+  function sumRange(start, end, type){
+    var total = 0;
+    Object.keys(state.records).forEach(function(ds){
+      if (!inRange(ds, start, end)) return;
+      total += (type === 'self') ? selfScore(state.records[ds]) : hardScore(state.records[ds]);
+    });
+    return round2(total);
+  }
+  function sumAll(type){
+    var total = 0;
+    Object.keys(state.records).forEach(function(ds){
+      total += (type === 'self') ? selfScore(state.records[ds]) : hardScore(state.records[ds]);
+    });
+    return round2(total);
+  }
+  function setPeriod(prefix, s, h){
+    document.getElementById(prefix + 'Self').textContent = fmt(s);
+    document.getElementById(prefix + 'Hard').textContent = fmt(h);
+    document.getElementById(prefix + 'Index').textContent = fmtIndex(s, h);
+  }
+  function renderStats(){
+    ensureDraft();
+    var now = new Date();
+    var ws = startOfWeek(now);
+    var we = new Date(ws); we.setDate(we.getDate() + 6); we.setHours(23,59,59,999);
+    var ms = new Date(now.getFullYear(), now.getMonth(), 1);
+    var me = new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+    var ys = new Date(now.getFullYear(), 0, 1);
+    var ye = new Date(now.getFullYear(), 11, 31, 23,59,59,999);
+
+    setPeriod('d', selfScore(draft), hardScore(draft));
+    setPeriod('w', sumRange(ws, we, 'self'), sumRange(ws, we, 'hard'));
+    setPeriod('m', sumRange(ms, me, 'self'), sumRange(ms, me, 'hard'));
+    setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'));
+    setPeriod('a', sumAll('self'), sumAll('hard'));
+    renderDailyList(document.getElementById('dailyList'));
+    renderReview();
+  }
+
+  // ---------- 自强事件回顾（周 / 月 / 年） ----------
+  var REVIEW_COLORS = ['#1f6feb','#7b2ff7','#e8590c','#12a594','#d93025','#f2a900','#0f9d8a','#845ef7'];
+  function colorAt(i){ return REVIEW_COLORS[i % REVIEW_COLORS.length]; }
+  var GRAN_LABELS = { w: '周度', m: '月度', y: '年度' };
+
+  function reviewKey(ds, gran){
+    var d = new Date(ds + 'T00:00:00');
+    if (gran === 'w') return fmtDate(startOfWeek(d));
+    if (gran === 'y') return String(d.getFullYear());
+    return ds.slice(0, 7);
+  }
+  function reviewLabel(key, gran){
+    if (gran === 'm') {
+      var p = key.split('-');
+      return p[0] + '年' + Number(p[1]) + '月';
+    }
+    if (gran === 'y') return key + '年';
+    var s = new Date(key + 'T00:00:00');
+    var e = new Date(s);
+    e.setDate(e.getDate() + 6);
+    return s.getFullYear() + '年' + (s.getMonth()+1) + '月' + s.getDate() + '日 – ' +
+      (e.getMonth()+1) + '月' + e.getDate() + '日';
+  }
+
+  function renderReview(){
+    var box = document.getElementById('reviewMonths');
+    var byGroup = {};
+    Object.keys(state.records).forEach(function(ds){
+      var k = reviewKey(ds, reviewGranularity);
+      if (!byGroup[k]) byGroup[k] = [];
+      byGroup[k].push(state.records[ds]);
+    });
+    var groups = Object.keys(byGroup).sort().reverse();
+    if (!groups.length) {
+      box.innerHTML = '<div class="empty">还没有可回顾的' + GRAN_LABELS[reviewGranularity] + '数据</div>';
+      return;
+    }
+
+    box.innerHTML = groups.map(function(k){
+      var recs = byGroup[k];
+      var rows = state.config.selfItems.map(function(item, idx){
+        var cnt = 0, score = 0;
+        recs.forEach(function(rec){
+          var c = Number(rec.self[item.id]) || 0;
+          cnt += c;
+          score += c * item.weight;
+        });
+        return { name: item.name, cnt: cnt, score: round2(score), color: colorAt(idx), pct: 0 };
+      });
+      var total = round2(rows.reduce(function(s, r){ return s + r.score; }, 0));
+      if (total > 0) rows.forEach(function(r){ r.pct = r.score / total * 100; });
+
+      var bar = '';
+      if (total > 0) {
+        bar = '<div class="stack-bar">' + rows.filter(function(r){ return r.score > 0; }).map(function(r){
+          return '<span class="stack-seg" style="width:' + r.pct.toFixed(4) + '%;background:' + r.color +
+            '" title="' + esc(r.name) + ' ' + fmt(r.pct) + '%"></span>';
+        }).join('') + '</div>';
+      }
+      var items = rows.map(function(r){
+        return '<div class="month-item" title="' + esc(r.name) + ' ×' + r.cnt + '">' +
+          '<span class="month-dot" style="background:' + r.color + '"></span>' +
+          '<span class="mname">' + esc(r.name) + '</span>' +
+          '<span class="mval">' + fmt(r.score) + '分 · ' + fmt(r.pct) + '%</span></div>';
+      }).join('');
+
+      return '<div class="month-block">' +
+        '<div class="month-head"><span>' + reviewLabel(k, reviewGranularity) + '</span>' +
+        '<span class="total">合计 ' + fmt(total) + '分</span></div>' +
+        bar + '<div class="month-items">' + items + '</div></div>';
+    }).join('');
+  }
+
+  document.getElementById('reviewGran').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-gran]');
+    if (!btn) return;
+    reviewGranularity = btn.getAttribute('data-gran');
+    document.querySelectorAll('#reviewGran button').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderReview();
+  });
+
+  // ---------- 日历 ----------
+  function indexLevel(v){
+    if (v === null) return '';
+    if (v < 0.25) return 'lv1';
+    if (v < 0.5) return 'lv2';
+    if (v < 1) return 'lv3';
+    return 'lv4';
+  }
+
+  function getDayData(key){
+    var rec = state.records[key];
+    var isDraft = false;
+    if (!rec && key === todayStr()) { rec = draft; isDraft = true; }
+    return { rec: rec, isDraft: isDraft };
+  }
+
+  function renderCalDetail(){
+    var key = calSelected;
+    var data = getDayData(key);
+    var box = document.getElementById('calDetail');
+    if (!data.rec) {
+      box.innerHTML = '<div class="empty">' + key + ' 还没有记录</div>';
+      return;
+    }
+    var s = selfScore(data.rec);
+    var h = hardScore(data.rec);
+    box.innerHTML =
+      '<div class="dline"><span class="dname">' + key + ' ' + weekdayName(new Date(key + 'T00:00:00')) + '</span>' +
+      (data.isDraft ? ' <span style="font-size:11px;color:#999">（今日草稿，未保存）</span>' : '') + '</div>' +
+      '<div class="period-metrics" style="margin:8px 0 10px">' +
+        '<div class="m"><div class="k">自强</div><div class="v self">' + fmt(s) + '</div></div>' +
+        '<div class="m"><div class="k">吃苦</div><div class="v hard">' + fmt(h) + '</div></div>' +
+        '<div class="m"><div class="k">指数</div><div class="v idx">' + fmtIndex(s, h) + '</div></div>' +
+      '</div>' + buildDailyDetail(data.rec);
+  }
+
+  function renderCalendar(){
+    document.getElementById('calTitle').textContent = calYear + '年' + (calMonth + 1) + '月';
+    var names = (state.config.weekStart === 0)
+      ? ['日','一','二','三','四','五','六']
+      : ['一','二','三','四','五','六','日'];
+    document.getElementById('calWeekdays').innerHTML = names.map(function(n){
+      return '<div>' + n + '</div>';
+    }).join('');
+
+    var first = new Date(calYear, calMonth, 1);
+    var offset = (first.getDay() - state.config.weekStart + 7) % 7;
+    var daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+    var html = '';
+    var i;
+    for (i = 0; i < offset; i++) html += '<div class="cal-cell empty-cell"></div>';
+    for (i = 1; i <= daysInMonth; i++) {
+      var d = new Date(calYear, calMonth, i);
+      var key = fmtDate(d);
+      var data = getDayData(key);
+      var s = data.rec ? selfScore(data.rec) : 0;
+      var h = data.rec ? hardScore(data.rec) : 0;
+      var idx = data.rec ? fmtIndex(s, h) : '';
+      var cls = 'cal-cell' + (indexLevel(calcIndex(s, h)) ? ' ' + indexLevel(calcIndex(s, h)) : '');
+      if (key === todayStr()) cls += ' today';
+      if (data.isDraft) cls += ' draft';
+      html += '<div class="' + cls + '" data-date="' + key + '">' +
+        '<div class="cal-day">' + i + '</div>' +
+        '<div class="cal-idx">' + idx + '</div></div>';
+    }
+    var trailing = (7 - (offset + daysInMonth) % 7) % 7;
+    for (i = 0; i < trailing; i++) html += '<div class="cal-cell empty-cell"></div>';
+    document.getElementById('calDays').innerHTML = html;
+    renderCalDetail();
+  }
+
+  function moveMonth(delta){
+    var d = new Date(calYear, calMonth + delta, 1);
+    calYear = d.getFullYear();
+    calMonth = d.getMonth();
+    calSelected = fmtDate(d);
+    renderCalendar();
+  }
+
+  document.getElementById('calPrev').addEventListener('click', function(){ moveMonth(-1); });
+  document.getElementById('calNext').addEventListener('click', function(){ moveMonth(1); });
+  document.getElementById('calToday').addEventListener('click', function(){
+    var now = new Date();
+    calYear = now.getFullYear();
+    calMonth = now.getMonth();
+    calSelected = todayStr();
+    renderCalendar();
+  });
+  document.getElementById('calDays').addEventListener('click', function(e){
+    var cell = e.target.closest('.cal-cell[data-date]');
+    if (!cell) return;
+    calSelected = cell.getAttribute('data-date');
+    renderCalDetail();
+  });
+  // ---------- 每日明细 / 历史 ----------
+  function buildDailyDetail(rec){
+    var lines = [];
+    state.config.selfItems.forEach(function(i){
+      var cnt = Number(rec.self[i.id]) || 0;
+      var note = (rec.notes && rec.notes[i.id]) ? rec.notes[i.id] : '';
+      if (cnt > 0 || note) {
+        lines.push('<div class="dline"><span class="dname">' + esc(i.name) + '</span> ×' + cnt +
+          '<div class="dtext">' + (note ? esc(note) : '<span style="color:#aaa">未填写具体事项</span>') + '</div></div>');
+      }
+    });
+    state.config.hardItems.forEach(function(i){
+      var v = Number(rec.hard[i.id]) || 0;
+      if (v > 0) lines.push('<div class="dline"><span class="dname">' + esc(i.name) + '</span> ' + fmt(v) + '</div>');
+    });
+    if (!lines.length) lines.push('<div class="dline" style="color:#aaa">无明细</div>');
+    return lines.join('');
+  }
+
+  function renderDailyList(list){
+    var dates = Object.keys(state.records).sort().reverse();
+    if (!dates.length) {
+      list.innerHTML = '<div class="empty">还没有保存的记录</div>';
+      return;
+    }
+    list.innerHTML = dates.map(function(ds){
+      var rec = state.records[ds];
+      var s = selfScore(rec);
+      var h = hardScore(rec);
+      return '<div class="history-item">' +
+        '<div class="history-head">' +
+          '<span class="d">' + ds + ' ' + weekdayName(new Date(ds + 'T00:00:00')) + '</span>' +
+          '<span><span class="s self">自 ' + fmt(s) + '</span> · ' +
+          '<span class="s hard">吃 ' + fmt(h) + '</span> · ' +
+          '<span style="color:#7b2ff7;font-weight:600">指数 ' + fmtIndex(s, h) + '</span></span>' +
+        '</div>' +
+        '<div class="history-detail" style="display:none">' + buildDailyDetail(rec) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderHistory(){
+    renderDailyList(document.getElementById('historyList'));
+  }
+
+  document.querySelectorAll('.daily-list').forEach(function(list){
+    list.addEventListener('click', function(e){
+      var head = e.target.closest('.history-head');
+      if (!head) return;
+      var detail = head.nextElementSibling;
+      if (!detail || !detail.classList.contains('history-detail')) return;
+      detail.style.display = (detail.style.display === 'none') ? 'block' : 'none';
+    });
+  });
+
+  // ---------- 设置页 ----------
+  function renderSettings(){
+    var selfBox = document.getElementById('selfSettings');
+    selfBox.innerHTML = state.config.selfItems.map(function(i, idx){
+      return '<div class="set-row" data-id="' + esc(i.id) + '">' +
+        '<div class="set-line">' +
+          '<input type="text" class="set-name" data-field="name" value="' + esc(i.name) + '" placeholder="栏目名称">' +
+          '<button type="button" class="mini-btn" data-act="up" title="上移">↑</button>' +
+          '<button type="button" class="mini-btn" data-act="down" title="下移">↓</button>' +
+        '</div>' +
+        '<div class="set-line sub">' +
+          '<input type="text" class="set-hint" data-field="hint" value="' + esc(i.hint) + '" placeholder="提示文字（可选）">' +
+          '<label style="font-size:12px;color:#888">每次</label>' +
+          '<input type="number" class="set-weight" data-field="weight" min="0" step="0.5" value="' + i.weight + '">' +
+          '<label style="font-size:12px;color:#888">分</label>' +
+          '<button type="button" class="mini-btn danger" data-act="del">删除</button>' +
+        '</div></div>';
+    }).join('') || '<div class="empty">暂无栏目</div>';
+
+    var hardBox = document.getElementById('hardSettings');
+    hardBox.innerHTML = state.config.hardItems.map(function(i){
+      return '<div class="set-row" data-id="' + esc(i.id) + '">' +
+        '<div class="set-line">' +
+          '<input type="text" class="set-name" data-field="name" value="' + esc(i.name) + '" placeholder="栏目名称（小时）">' +
+          '<button type="button" class="mini-btn" data-act="up" title="上移">↑</button>' +
+          '<button type="button" class="mini-btn" data-act="down" title="下移">↓</button>' +
+          '<button type="button" class="mini-btn danger" data-act="del">删除</button>' +
+        '</div></div>';
+    }).join('') || '<div class="empty">暂无栏目</div>';
+
+    document.getElementById('hardStepSelect').value = String(state.config.hardStep);
+    document.getElementById('weekStartSelect').value = String(state.config.weekStart);
+  }
+
+  function bindSettingsList(containerId, kind){
+    var box = document.getElementById(containerId);
+    box.addEventListener('input', function(e){
+      var input = e.target.closest('input[data-field]');
+      if (!input) return;
+      var row = input.closest('.set-row');
+      var id = row.getAttribute('data-id');
+      var list = kind === 'self' ? state.config.selfItems : state.config.hardItems;
+      var item = list.find(function(x){ return x.id === id; });
+      if (!item) return;
+      var field = input.getAttribute('data-field');
+      if (field === 'weight') {
+        var w = Number(input.value);
+        item.weight = isFinite(w) && w >= 0 ? w : 0;
+      } else {
+        item[field] = input.value;
+      }
+      saveState();
+      renderRecord();
+      renderStats();
+      renderHistory();
+    });
+
+    box.addEventListener('click', function(e){
+      var btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      var row = btn.closest('.set-row');
+      var id = row.getAttribute('data-id');
+      var list = kind === 'self' ? state.config.selfItems : state.config.hardItems;
+      var idx = list.findIndex(function(x){ return x.id === id; });
+      if (idx < 0) return;
+      var act = btn.getAttribute('data-act');
+      if (act === 'del') {
+        if (!confirm('删除栏目「' + list[idx].name + '」？历史数据仍保留在 JSON 备份中，但不再计入统计。')) return;
+        list.splice(idx, 1);
+      } else if (act === 'up' && idx > 0) {
+        list.splice(idx-1, 0, list.splice(idx, 1)[0]);
+      } else if (act === 'down' && idx < list.length - 1) {
+        list.splice(idx+1, 0, list.splice(idx, 1)[0]);
+      } else {
+        return;
+      }
+      saveState();
+      ensureDraft();
+      renderAll();
+    });
+  }
+  bindSettingsList('selfSettings', 'self');
+  bindSettingsList('hardSettings', 'hard');
+
+  document.getElementById('addSelfBtn').addEventListener('click', function(){
+    state.config.selfItems.push({ id: uid('s'), name: '新自强栏目', hint: '每次 +1 分', weight: 1 });
+    saveState();
+    ensureDraft();
+    renderAll();
+  });
+  document.getElementById('addHardBtn').addEventListener('click', function(){
+    state.config.hardItems.push({ id: uid('h'), name: '新吃苦栏目' });
+    saveState();
+    ensureDraft();
+    renderAll();
+  });
+  document.getElementById('hardStepSelect').addEventListener('change', function(e){
+    state.config.hardStep = Number(e.target.value) === 1 ? 1 : 0.5;
+    saveState();
+    toast('步长已更新');
+  });
+  document.getElementById('weekStartSelect').addEventListener('change', function(e){
+    state.config.weekStart = Number(e.target.value) === 0 ? 0 : 1;
+    saveState();
+    renderStats();
+    renderCalendar();
+    renderReview();
+    toast('周起始日已更新');
+  });
+  document.getElementById('restoreDefaultsBtn').addEventListener('click', function(){
+    if (!confirm('恢复默认的 4 个自强栏目和 3 个吃苦栏目？已保存的记录会保留，自定义栏目将不再显示。')) return;
+    state.config = defaultConfig();
+    saveState();
+    ensureDraft();
+    renderAll();
+    toast('已恢复默认栏目');
+  });
+  document.getElementById('goSettingsSelf').addEventListener('click', function(){ switchTab('settings'); });
+  document.getElementById('goSettingsHard').addEventListener('click', function(){ switchTab('settings'); });
+
+  // ---------- 备份 / 导入 / 清空 ----------
+  function download(content, filename, mime){
+    var blob = new Blob([content], { type: mime });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(a.href); }, 1000);
+  }
+  function csvCell(v){
+    var s = String(v == null ? '' : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+
+  document.getElementById('exportCsvBtn').addEventListener('click', function(){
+    var dates = Object.keys(state.records).sort();
+    if (!dates.length) { toast('没有数据可导出'); return; }
+    var header = ['日期'];
+    state.config.selfItems.forEach(function(i){ header.push(i.name + '(+' + fmt(i.weight) + '分)'); });
+    state.config.selfItems.forEach(function(i){ header.push(i.name + '-具体事项'); });
+    header.push('自强日分');
+    state.config.hardItems.forEach(function(i){ header.push(i.name); });
+    header.push('吃苦日分');
+    header.push('指数');
+    var rows = dates.map(function(ds){
+      var rec = state.records[ds];
+      var s = selfScore(rec);
+      var h = hardScore(rec);
+      var row = [ds];
+      state.config.selfItems.forEach(function(i){ row.push(Number(rec.self[i.id]) || 0); });
+      state.config.selfItems.forEach(function(i){ row.push((rec.notes && rec.notes[i.id]) ? rec.notes[i.id] : ''); });
+      row.push(fmt(s));
+      state.config.hardItems.forEach(function(i){ row.push(Number(rec.hard[i.id]) || 0); });
+      row.push(fmt(h));
+      row.push(fmtIndex(s, h));
+      return row.map(csvCell).join(',');
+    });
+    download('\uFEFF' + header.map(csvCell).join(',') + '\n' + rows.join('\n'),
+      '自强吃苦指数_' + todayStr() + '.csv', 'text/csv;charset=utf-8;');
+    toast('已导出 CSV');
+  });
+
+  document.getElementById('exportJsonBtn').addEventListener('click', function(){
+    download(JSON.stringify(state, null, 2),
+      '自强吃苦指数_备份_' + todayStr() + '.json', 'application/json;charset=utf-8;');
+    toast('已备份 JSON');
+  });
+
+  document.getElementById('importJsonBtn').addEventListener('click', function(){
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(){
+      try {
+        var obj = JSON.parse(reader.result);
+        if (!obj || !obj.config || !obj.records) throw new Error('invalid');
+        if (!confirm('导入会覆盖当前所有记录和栏目设置，确定继续？')) return;
+        state = normalize(obj);
+        saveState();
+        draft = null; draftDate = '';
+        ensureDraft();
+        renderAll();
+        toast('导入成功');
+      } catch(err) {
+        toast('文件格式不对，导入失败');
+      }
+      e.target.value = '';
+    };
+    reader.readAsText(file);
+  });
+
+  document.getElementById('clearAllBtn').addEventListener('click', function(){
+    if (!confirm('确定清空全部已保存记录？栏目设置会保留，记录不可恢复。建议先备份 JSON。')) return;
+    state.records = {};
+    saveState();
+    draft = blankDraft(); draftDate = todayStr();
+    renderAll();
+    toast('已清空记录');
+  });
+
+  // ---------- Tab ----------
+  function switchTab(tab){
+    document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.remove('active'); });
+    var active = document.querySelector('.tabs button[data-tab="' + tab + '"]');
+    if (active) active.classList.add('active');
+    ['record','stats','calendar','history','settings'].forEach(function(t){
+      document.getElementById('tab-' + t).style.display = (t === tab) ? 'block' : 'none';
+    });
+    if (tab === 'stats') renderStats();
+    if (tab === 'calendar') renderCalendar();
+    if (tab === 'history') renderHistory();
+    if (tab === 'settings') renderSettings();
+  }
+  document.querySelector('.tabs').addEventListener('click', function(e){
+    var btn = e.target.closest('button[data-tab]');
+    if (btn) switchTab(btn.getAttribute('data-tab'));
+  });
+
+  function renderAll(){
+    ensureDraft();
+    renderRecord();
+    renderStats();
+    renderCalendar();
+    renderHistory();
+    renderSettings();
+  }
+
+  renderAll();
+})();
+</script>
+</body>
+</html>
