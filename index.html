@@ -259,7 +259,7 @@
       <span class="formula">自强吃苦指数 = 自强事件分总和 ÷ 吃苦分总和</span>
       <span class="val" id="todayIndex">—</span>
     </div>
-    <div class="note">自强分 = 各栏目次数 × 每次分值之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；「保存今日」会一并保存整页内容，填错可直接修改，或用「清空今日」整体重填。</div>
+    <div class="note">自强分 = 各栏目次数 × 每次分值之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；「保存今日」会一并保存整页内容并清空界面方便下次填写，填错可直接修改，或用「清空今日」整体重填。</div>
   </div>
 
   <div class="card">
@@ -600,6 +600,19 @@
     return draft;
   }
 
+  function hasDraftContent(){
+    if (!draft) return false;
+    var has = false;
+    state.config.selfItems.forEach(function(i){
+      if ((Number(draft.self && draft.self[i.id]) || 0) > 0) has = true;
+      if (draft.notes && draft.notes[i.id]) has = true;
+    });
+    state.config.hardItems.forEach(function(i){
+      if ((Number(draft.hard && draft.hard[i.id]) || 0) > 0) has = true;
+    });
+    return has;
+  }
+
   function selfScore(rec){
     if (!rec || !rec.self) return 0;
     var sum = 0;
@@ -723,10 +736,17 @@
 
   document.getElementById('saveBtn').addEventListener('click', function(){
     ensureDraft();
-    state.records[todayStr()] = JSON.parse(JSON.stringify(draft));
+    var ds = todayStr();
+    if (!hasDraftContent() && state.records[ds]) {
+      toast('今日还没有填写新内容，未覆盖已保存记录');
+      return;
+    }
+    state.records[ds] = JSON.parse(JSON.stringify(draft));
     saveState();
+    draft = blankDraft();
+    draftDate = ds;
     renderAll();
-    toast('已保存 ' + todayStr());
+    toast('已保存 ' + ds + '，界面已清空');
   });
 
   document.getElementById('resetBtn').addEventListener('click', function(){
@@ -852,7 +872,7 @@
     if (dateInput && dateInput.value !== statsDate) dateInput.value = statsDate;
 
     setPeriodRange('d', '今日', fmtCN(statsDate));
-    var dRec = (statsDate === todayStr()) ? draft : state.records[statsDate];
+    var dRec = (statsDate === todayStr() && hasDraftContent()) ? draft : state.records[statsDate];
     setPeriod('d', dRec ? selfScore(dRec) : 0, dRec ? hardScore(dRec) : 0);
 
     var ws = startOfWeek(sel);
@@ -886,6 +906,17 @@
   var REVIEW_COLORS = ['#1f6feb','#7b2ff7','#e8590c','#12a594','#d93025','#f2a900','#0f9d8a','#845ef7'];
   function colorAt(i){ return REVIEW_COLORS[i % REVIEW_COLORS.length]; }
   var GRAN_LABELS = { w: '周度', m: '月度', y: '年度' };
+  var SHORT_NAMES = {
+    '主动做有用的事（含结果）': '做有用的事',
+    '主动学习现用的知识': '学现用知识',
+    '主动认识一位人脉朋友': '认识人脉',
+    '获得超额收入（平时时薪3倍）': '超额收入'
+  };
+  function shortName(name){
+    if (SHORT_NAMES[name]) return SHORT_NAMES[name];
+    var n = String(name || '').replace(/（[^）]*）/g, '').trim();
+    return n.length > 6 ? n.slice(0, 6) + '…' : n;
+  }
 
   function reviewKey(ds, gran){
     var d = new Date(ds + 'T00:00:00');
@@ -929,7 +960,7 @@
           cnt += c;
           score += c * item.weight;
         });
-        return { name: item.name, cnt: cnt, score: round2(score), color: colorAt(idx), pct: 0 };
+        return { name: item.name, short: shortName(item.name), cnt: cnt, score: round2(score), color: colorAt(idx), pct: 0 };
       });
       var total = round2(rows.reduce(function(s, r){ return s + r.score; }, 0));
       if (total > 0) rows.forEach(function(r){ r.pct = r.score / total * 100; });
@@ -942,9 +973,9 @@
         }).join('') + '</div>';
       }
       var items = rows.map(function(r){
-        return '<div class="month-item" title="' + esc(r.name) + ' ×' + r.cnt + '">' +
+        return '<div class="month-item" title="' + esc(r.name) + '：' + fmt(r.score) + '分 · ' + fmt(r.pct) + '%（' + r.cnt + '次）">' +
           '<span class="month-dot" style="background:' + r.color + '"></span>' +
-          '<span class="mname">' + esc(r.name) + '</span>' +
+          '<span class="mname">' + esc(r.short) + '</span>' +
           '<span class="mval">' + fmt(r.score) + '分 · ' + fmt(r.pct) + '%</span></div>';
       }).join('');
 
