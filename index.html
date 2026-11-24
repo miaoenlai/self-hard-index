@@ -371,10 +371,6 @@
     </div>
     <div id="reviewMonths"></div>
   </div>
-  <div class="card">
-    <h2>每日明细 <span class="link">点某一天查看当天具体事件</span></h2>
-    <div class="daily-list" id="dailyList"></div>
-  </div>
   <div class="actions">
     <button class="btn-secondary" id="exportCsvBtn">导出 CSV</button>
     <button class="btn-secondary" id="exportJsonBtn">备份 JSON</button>
@@ -909,7 +905,6 @@
     setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'), fmtPctNum(avgDailyIndex(ys, ye)));
     renderDensity(dailyIndexList(ys, ye), sel.getFullYear());
     setPeriod('a', sumAll('self'), sumAll('hard'));
-    renderDailyList(document.getElementById('dailyList'));
     renderReview();
   }
   document.getElementById('statsDate').addEventListener('change', function(e){
