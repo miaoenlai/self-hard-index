@@ -65,6 +65,18 @@
   .period-metrics .v.self { color: #1f6feb; }
   .period-metrics .v.hard { color: #e8590c; }
   .period-metrics .v.idx { color: #7b2ff7; }
+  .density-card { border-left: 4px solid #ddd; transition: background .2s; }
+  .density-main { display: flex; align-items: center; gap: 14px; }
+  .density-val { font-size: 30px; font-weight: 800; color: #333; line-height: 1; white-space: nowrap; }
+  .density-info { flex: 1; min-width: 0; }
+  .density-level { font-size: 15px; font-weight: 700; color: #444; }
+  .density-desc { font-size: 12px; color: #666; margin-top: 4px; line-height: 1.5; }
+  .density-sub { font-size: 11px; color: #999; margin-top: 6px; }
+  .density-scale { display: flex; gap: 4px; margin-top: 10px; }
+  .density-scale span {
+    flex: 1; text-align: center; font-size: 10px; color: #777;
+    background: rgba(255,255,255,.7); border-radius: 6px; padding: 5px 2px;
+  }
   .seg { display: flex; background: #f5f7fa; border-radius: 8px; padding: 3px; margin-bottom: 10px; }
   .seg button {
     flex: 1; padding: 7px 2px; border: none; background: transparent; border-radius: 6px;
@@ -305,6 +317,21 @@
       </div>
     </div>
     <div class="note">周起始日可在「设置」里切换为周一或周日。吃苦分为 0 时指数显示为「—」。</div>
+  </div>
+  <div class="card density-card" id="densityCard">
+    <h2>人生密度 <span class="link">按本年指数</span></h2>
+    <div class="density-main">
+      <div class="density-val" id="densityPct">—</div>
+      <div class="density-info">
+        <div class="density-level" id="densityLevel">暂无评价</div>
+        <div class="density-desc" id="densityDesc">先记录本年数据，再来看你的人生密度。</div>
+        <div class="density-sub" id="densitySub">本年自强 0 / 吃苦 0</div>
+      </div>
+    </div>
+    <div class="density-scale">
+      <span>0–5% 低密度</span><span>5–15% 中密度</span><span>≥15% 高密度</span>
+    </div>
+    <div class="note">按「本年自强总分 ÷ 本年吃苦总分」计算；5% 归入中密度，15% 归入高密度。吃苦为 0 时不评价。</div>
   </div>
   <div class="card">
     <h2>自强事件回顾 <span class="link">四类分值 / 占比</span></h2>
@@ -721,6 +748,37 @@
     document.getElementById(prefix + 'Hard').textContent = fmt(h);
     document.getElementById(prefix + 'Index').textContent = fmtIndex(s, h);
   }
+  function renderDensity(s, h){
+    var card = document.getElementById('densityCard');
+    var pctEl = document.getElementById('densityPct');
+    var levelEl = document.getElementById('densityLevel');
+    var descEl = document.getElementById('densityDesc');
+    document.getElementById('densitySub').textContent = '本年自强 ' + fmt(s) + ' / 吃苦 ' + fmt(h);
+    if (!(h > 0)) {
+      pctEl.textContent = '—';
+      levelEl.textContent = '暂无评价';
+      descEl.textContent = '本年还没有吃苦记录，先记录后再看人生密度。';
+      levelEl.style.color = '#444';
+      card.style.background = '#fff';
+      card.style.borderLeftColor = '#ddd';
+      return;
+    }
+    var pct = round2(s / h * 100);
+    var info;
+    if (pct < 5) {
+      info = { level: '低密度人生', desc: '牛马人生，辛苦不快乐', color: '#e8590c', bg: '#fff7f0' };
+    } else if (pct < 15) {
+      info = { level: '中密度人生', desc: '平衡前行，付出与回报相当', color: '#1f6feb', bg: '#f0f6ff' };
+    } else {
+      info = { level: '高密度人生', desc: '快乐自驱回报高', color: '#12a594', bg: '#eefaf7' };
+    }
+    pctEl.textContent = fmt(pct) + '%';
+    levelEl.textContent = info.level;
+    descEl.textContent = info.desc;
+    levelEl.style.color = info.color;
+    card.style.background = info.bg;
+    card.style.borderLeftColor = info.color;
+  }
   function renderStats(){
     ensureDraft();
     var now = new Date();
@@ -734,7 +792,10 @@
     setPeriod('d', selfScore(draft), hardScore(draft));
     setPeriod('w', sumRange(ws, we, 'self'), sumRange(ws, we, 'hard'));
     setPeriod('m', sumRange(ms, me, 'self'), sumRange(ms, me, 'hard'));
-    setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'));
+    var ySelf = sumRange(ys, ye, 'self');
+    var yHard = sumRange(ys, ye, 'hard');
+    setPeriod('y', ySelf, yHard);
+    renderDensity(ySelf, yHard);
     setPeriod('a', sumAll('self'), sumAll('hard'));
     renderDailyList(document.getElementById('dailyList'));
     renderReview();
