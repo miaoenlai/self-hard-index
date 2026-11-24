@@ -292,6 +292,7 @@
 
   <div class="actions">
     <button class="btn-primary" id="saveBtn">保存今日</button>
+    <button class="btn-secondary" id="restoreBtn">恢复今日</button>
     <button class="btn-secondary" id="resetBtn">清空今日</button>
   </div>
 </div>
@@ -762,8 +763,21 @@
     toast('已保存 ' + ds);
   });
 
+  document.getElementById('restoreBtn').addEventListener('click', function(){
+    var ds = todayStr();
+    var rec = state.records[ds];
+    if (!rec) {
+      toast('今日还没有已保存的记录');
+      return;
+    }
+    draft = JSON.parse(JSON.stringify(rec));
+    draftDate = ds;
+    renderAll();
+    toast('已恢复今日保存的记录');
+  });
+
   document.getElementById('resetBtn').addEventListener('click', function(){
-    if (!confirm('清空今日未保存的输入？')) return;
+    if (!confirm('清空今日未保存的输入？已保存的记录不会被删除，可用「恢复今日」找回。')) return;
     draft = blankDraft();
     draftDate = todayStr();
     renderRecord();
