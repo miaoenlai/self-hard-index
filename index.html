@@ -277,7 +277,7 @@
       <span class="formula">自强吃苦指数 = 自强事件分总和 ÷ 吃苦分总和</span>
       <span class="val" id="todayIndex">—</span>
     </div>
-    <div class="note">自强分 = 各栏目次数 × 每次分值之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；「保存今日」会一并保存整页内容并清空界面方便下次填写，填错可直接修改，或用「清空今日」整体重填。</div>
+    <div class="note">自强分 = 各栏目次数 × 每次分值之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；「保存今日」后界面全天保留今日内容，可随时修改再保存；跨过零点会自动清空，供填写新一天的数据。</div>
   </div>
 
   <div class="card">
@@ -751,16 +751,15 @@
   document.getElementById('saveBtn').addEventListener('click', function(){
     ensureDraft();
     var ds = todayStr();
-    if (!hasDraftContent() && state.records[ds]) {
-      toast('今日还没有填写新内容，未覆盖已保存记录');
+    if (!hasDraftContent()) {
+      toast('今日还没有填写内容');
       return;
     }
     state.records[ds] = JSON.parse(JSON.stringify(draft));
     saveState();
-    draft = blankDraft();
-    draftDate = ds;
+    // 保存后不清空，界面全天保持显示今日内容；跨零点由 checkDayRollover 自动切换
     renderAll();
-    toast('已保存 ' + ds + '，界面已清空');
+    toast('已保存 ' + ds);
   });
 
   document.getElementById('resetBtn').addEventListener('click', function(){
@@ -1411,6 +1410,28 @@
     renderCalendar();
     renderHistory();
     renderSettings();
+  }
+
+  // ---------- 跨天自动清空 ----------
+  function checkDayRollover(){
+    var t = todayStr();
+    if (!draftDate || draftDate === t) return;
+    // 日期已变（跨过零点）：切到新的一天，显示新日期的已保存记录或空白待填
+    draft = state.records[t] ? JSON.parse(JSON.stringify(state.records[t])) : blankDraft();
+    draftDate = t;
+    statsDate = t;
+    renderAll();
+    toast('新的一天 ' + t + '，已清空待填写区');
+  }
+  // 仅在浏览器环境启动定时器（测试桩无 window，跳过）
+  if (typeof window !== 'undefined') {
+    if (typeof setInterval === 'function') setInterval(checkDayRollover, 30000);
+    if (window.addEventListener) window.addEventListener('focus', checkDayRollover);
+  }
+  if (document.addEventListener) {
+    document.addEventListener('visibilitychange', function(){
+      if (!document.hidden) checkDayRollover();
+    });
   }
 
   renderAll();
