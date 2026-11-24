@@ -319,7 +319,7 @@
     <div class="note">周起始日可在「设置」里切换为周一或周日。吃苦分为 0 时指数显示为「—」。</div>
   </div>
   <div class="card density-card" id="densityCard">
-    <h2>人生密度 <span class="link">按本年指数</span></h2>
+    <h2>人生密度 <span class="link">按本年日均指数</span></h2>
     <div class="density-main">
       <div class="density-val" id="densityPct">—</div>
       <div class="density-info">
@@ -331,7 +331,7 @@
     <div class="density-scale">
       <span>0–5% 低密度</span><span>5–15% 中密度</span><span>≥15% 高密度</span>
     </div>
-    <div class="note">按「本年自强总分 ÷ 本年吃苦总分」计算；5% 归入中密度，15% 归入高密度。吃苦为 0 时不评价。</div>
+    <div class="note">按本年每日指数的算术平均计算（当日指数 = 当日自强分 ÷ 当日吃苦分）；只统计有记录且吃苦大于 0 的日子，没记录的日期不计入。5% 归入中密度，15% 归入高密度。</div>
   </div>
   <div class="card">
     <h2>自强事件回顾 <span class="link">四类分值 / 占比</span></h2>
@@ -748,22 +748,23 @@
     document.getElementById(prefix + 'Hard').textContent = fmt(h);
     document.getElementById(prefix + 'Index').textContent = fmtIndex(s, h);
   }
-  function renderDensity(s, h){
+  function renderDensity(daily){
     var card = document.getElementById('densityCard');
     var pctEl = document.getElementById('densityPct');
     var levelEl = document.getElementById('densityLevel');
     var descEl = document.getElementById('densityDesc');
-    document.getElementById('densitySub').textContent = '本年自强 ' + fmt(s) + ' / 吃苦 ' + fmt(h);
-    if (!(h > 0)) {
+    document.getElementById('densitySub').textContent = '本年 ' + daily.length + ' 天有指数记录';
+    if (!daily.length) {
       pctEl.textContent = '—';
       levelEl.textContent = '暂无评价';
-      descEl.textContent = '本年还没有吃苦记录，先记录后再看人生密度。';
+      descEl.textContent = '本年还没有可计算指数的记录，先记录后再看人生密度。';
       levelEl.style.color = '#444';
       card.style.background = '#fff';
       card.style.borderLeftColor = '#ddd';
       return;
     }
-    var pct = round2(s / h * 100);
+    var sum = daily.reduce(function(a, b){ return a + b; }, 0);
+    var pct = round2(sum / daily.length * 100);
     var info;
     if (pct < 5) {
       info = { level: '低密度人生', desc: '牛马人生，辛苦不快乐', color: '#e8590c', bg: '#fff7f0' };
@@ -795,7 +796,14 @@
     var ySelf = sumRange(ys, ye, 'self');
     var yHard = sumRange(ys, ye, 'hard');
     setPeriod('y', ySelf, yHard);
-    renderDensity(ySelf, yHard);
+    var dailyDensity = [];
+    Object.keys(state.records).forEach(function(ds){
+      if (!inRange(ds, ys, ye)) return;
+      var rec = state.records[ds];
+      var h = hardScore(rec);
+      if (h > 0) dailyDensity.push(selfScore(rec) / h);
+    });
+    renderDensity(dailyDensity);
     setPeriod('a', sumAll('self'), sumAll('hard'));
     renderDailyList(document.getElementById('dailyList'));
     renderReview();
