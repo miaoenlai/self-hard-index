@@ -76,17 +76,17 @@
   .period-metrics.two { grid-template-columns: 1fr 1fr; }
   .link { font-size: 11px; font-weight: 400; color: #999; margin-left: 6px; }
   .trend { margin-top: 10px; }
-  .trend-bars { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding-top: 4px; border-bottom: 1px solid #eee; }
-  .trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
-  .trend-bar { width: 76%; max-width: 34px; border-radius: 4px 4px 0 0; background: #e0d4fa; min-height: 2px; transition: height .25s ease; }
-  .trend-col.current .trend-bar { background: linear-gradient(180deg, #7b2ff7, #1f6feb); }
-  .trend-col.empty .trend-bar { background: #eceaf0; }
-  .trend-val { font-size: 10px; color: #999; margin-bottom: 3px; white-space: nowrap; }
-  .trend-col.current .trend-val { color: #7b2ff7; font-weight: 700; }
-  .trend-label { font-size: 10px; color: #aaa; margin-top: 5px; white-space: nowrap; }
-  .trend-col.current .trend-label { color: #7b2ff7; font-weight: 600; }
-  .trend-legend { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 10px; color: #aaa; }
-  .trend-legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: linear-gradient(180deg, #7b2ff7, #1f6feb); margin-right: 4px; vertical-align: -1px; }
+  .trend-line { width: 100%; height: auto; display: block; overflow: visible; }
+  .trend-avg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #888; padding: 2px 2px 3px; }
+  .trend-avg .avg-label { color: #7b2ff7; font-weight: 600; }
+  .trend-avg .avg-val { font-size: 15px; font-weight: 700; color: #7b2ff7; }
+  .trend-avg.year { background: linear-gradient(90deg, #fff4e2, #fffaf1); border: 1px solid #ffdfae; border-radius: 8px; padding: 6px 9px; margin-bottom: 3px; }
+  .trend-avg.year .avg-label { color: #b35c00; }
+  .trend-avg.year .avg-val { font-size: 20px; color: #e8590c; }
+  .trend-avg.year .avg-tag { margin-left: auto; font-size: 10px; color: #b35c00; background: #ffe9c9; padding: 2px 6px; border-radius: 8px; }
+  .trend-legend { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; font-size: 10px; color: #aaa; }
+  .trend-legend .swatch { display: inline-block; width: 14px; height: 0; border-top: 2px solid #7b2ff7; margin-right: 4px; vertical-align: 3px; }
+  .trend-legend .dash { display: inline-block; width: 14px; height: 0; border-top: 1px dashed #e8590c; margin: 0 4px 0 8px; vertical-align: 3px; }
   .density-card { border-left: 4px solid #ddd; transition: background .2s; }
   .density-main { display: flex; align-items: center; gap: 14px; }
   .density-val { font-size: 30px; font-weight: 800; color: #333; line-height: 1; white-space: nowrap; }
@@ -939,21 +939,61 @@
     if (!box) return;
     var wins = trendWindows(gran, sel);
     var vals = wins.map(function(w){ return avgDailyIndex(w.start, w.end); });
+    var valid = vals.filter(function(v){ return v !== null && v !== undefined; });
+    var sum = 0;
+    valid.forEach(function(v){ sum += v; });
+    var avg = valid.length ? sum / valid.length : null;
     var max = 0;
-    vals.forEach(function(v){ if (v !== null && v > max) max = v; });
+    valid.forEach(function(v){ if (v > max) max = v; });
+    if (avg !== null && avg > max) max = avg;
     if (max <= 0) max = 1;
-    var html = '<div class="trend-bars">';
-    wins.forEach(function(w, i){
-      var v = vals[i];
-      var h = v === null ? 2 : Math.max(3, Math.round(v / max * 60));
-      var cls = 'trend-col' + (w.current ? ' current' : '') + (v === null ? ' empty' : '');
-      html += '<div class="' + cls + '">' +
-        '<div class="trend-val">' + (v === null ? '—' : fmtPctNum(v)) + '</div>' +
-        '<div class="trend-bar" style="height:' + h + 'px"></div>' +
-        '<div class="trend-label">' + w.label + '</div>' +
+
+    var W = 320, H = 122, padL = 8, padR = 8, padT = 20, padB = 24;
+    var plotW = W - padL - padR, plotH = H - padT - padB;
+    var px = function(i){ return padL + (wins.length > 1 ? i * plotW / (wins.length - 1) : plotW / 2); };
+    var py = function(v){ return padT + plotH - Math.max(0, Math.min(1, v / max)) * plotH; };
+    var isYear = gran === 'y';
+    var avgLabel = gran === 'w' ? '近8周周均' : gran === 'm' ? '近12月月均' : '近6年年均';
+
+    var html = '<div class="trend-avg' + (isYear ? ' year' : '') + '">' +
+      '<span class="avg-label">' + avgLabel + '</span>' +
+      '<strong class="avg-val">' + (avg === null ? '—' : fmtPctNum(avg)) + '</strong>' +
+      (isYear ? '<span class="avg-tag">重点参考</span>' : '') +
       '</div>';
+
+    html += '<svg class="trend-line" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + avgLabel + '趋势图">';
+    html += '<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="#eee" stroke-width="1"/>';
+    if (avg !== null) {
+      var ay = py(avg);
+      html += '<line x1="' + padL + '" y1="' + ay.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + ay.toFixed(1) + '" stroke="' + (isYear ? '#e8590c' : '#c9b6f5') + '" stroke-width="' + (isYear ? 1.6 : 1) + '" stroke-dasharray="5 4"/>';
+    }
+    var segs = [], cur = [];
+    vals.forEach(function(v, i){
+      if (v === null || v === undefined) {
+        if (cur.length) { segs.push(cur); cur = []; }
+      } else {
+        cur.push(px(i).toFixed(1) + ',' + py(v).toFixed(1));
+      }
     });
-    html += '</div><div class="trend-legend"><span><i class="swatch"></i>紫色为当前周期</span><span>柱越高指数越高</span></div>';
+    if (cur.length) segs.push(cur);
+    segs.forEach(function(seg){
+      html += '<polyline points="' + seg.join(' ') + '" fill="none" stroke="#b79bec" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+    });
+    wins.forEach(function(w, i){
+      var v = vals[i], x = px(i), y;
+      if (v === null || v === undefined) {
+        y = padT + plotH;
+        html += '<circle cx="' + x.toFixed(1) + '" cy="' + y + '" r="2.5" fill="#fff" stroke="#ddd" stroke-width="1.5"/>';
+        html += '<text x="' + x.toFixed(1) + '" y="' + (y - 7) + '" text-anchor="middle" font-size="9" fill="#bbb">—</text>';
+      } else {
+        y = py(v);
+        html += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="' + (w.current ? 4.5 : 3) + '" fill="' + (w.current ? '#7b2ff7' : '#fff') + '" stroke="#7b2ff7" stroke-width="1.6"/>';
+        html += '<text x="' + x.toFixed(1) + '" y="' + (y - 8).toFixed(1) + '" text-anchor="middle" font-size="' + (w.current ? 10 : 9) + '" font-weight="' + (w.current ? 700 : 400) + '" fill="' + (w.current ? '#7b2ff7' : '#888') + '">' + fmtPctNum(v) + '</text>';
+      }
+      html += '<text x="' + x.toFixed(1) + '" y="' + (H - 6) + '" text-anchor="middle" font-size="9" font-weight="' + (w.current ? 700 : 400) + '" fill="' + (w.current ? '#7b2ff7' : '#aaa') + '">' + w.label + '</text>';
+    });
+    html += '</svg>';
+    html += '<div class="trend-legend"><span><i class="swatch"></i>紫线=指数，紫点=当前周期</span><span><i class="dash"></i>虚线=均值</span></div>';
     box.innerHTML = html;
   }
 
