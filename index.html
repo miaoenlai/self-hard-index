@@ -347,11 +347,11 @@
     </div>
     <div class="period-card">
       <div class="period-title" id="yTitle">本年</div>
-      <div class="period-metrics two">
+      <div class="period-metrics">
         <div class="m"><div class="k">自强</div><div class="v self" id="ySelf">0</div></div>
         <div class="m"><div class="k">吃苦</div><div class="v hard" id="yHard">0</div></div>
+        <div class="m"><div class="k">指数</div><div class="v idx" id="yIndex">—</div></div>
       </div>
-      <div class="trend" id="yTrend"></div>
     </div>
     <div class="period-card">
       <div class="period-title">累计</div>
@@ -361,7 +361,7 @@
         <div class="m"><div class="k">指数</div><div class="v idx" id="aIndex">—</div></div>
       </div>
     </div>
-    <div class="note">默认按今天查看；选日期后，本周 / 本月 / 本年都按该日期所在周期显示。趋势图展示相邻周期指数的变化，紫色高亮为当前周期，无记录或吃苦为 0 的周期显示「—」。周起始日可在「设置」里切换。指数为每日指数的算术平均，累计为总量相除。</div>
+    <div class="note">默认按今天查看；选日期后，本周 / 本月 / 本年都按该日期所在周期显示。周 / 月趋势图展示相邻周期指数的变化，紫色高亮为当前周期，无记录或吃苦为 0 的周期显示「—」；本年直接显示指数数字。周起始日可在「设置」里切换。周 / 月 / 年指数为每日指数的算术平均，累计为总量相除。</div>
   </div>
   <div class="card density-card" id="densityCard">
     <h2>人生密度 <span class="link">按本年日均指数</span></h2>
@@ -1020,10 +1020,9 @@
 
     setPeriod('w', sumRange(ws, we, 'self'), sumRange(ws, we, 'hard'));
     setPeriod('m', sumRange(ms, me, 'self'), sumRange(ms, me, 'hard'));
-    setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'));
+    setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'), fmtPctNum(avgDailyIndex(ys, ye)));
     renderTrend('w', 'w', sel);
     renderTrend('m', 'm', sel);
-    renderTrend('y', 'y', sel);
     renderDensity(dailyIndexList(ys, ye), sel.getFullYear());
     setPeriod('a', sumAll('self'), sumAll('hard'));
     renderReview();
