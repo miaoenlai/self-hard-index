@@ -73,6 +73,20 @@
   .period-metrics .v.self { color: #1f6feb; }
   .period-metrics .v.hard { color: #e8590c; }
   .period-metrics .v.idx { color: #7b2ff7; }
+  .period-metrics.two { grid-template-columns: 1fr 1fr; }
+  .link { font-size: 11px; font-weight: 400; color: #999; margin-left: 6px; }
+  .trend { margin-top: 10px; }
+  .trend-bars { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding-top: 4px; border-bottom: 1px solid #eee; }
+  .trend-col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
+  .trend-bar { width: 76%; max-width: 34px; border-radius: 4px 4px 0 0; background: #e0d4fa; min-height: 2px; transition: height .25s ease; }
+  .trend-col.current .trend-bar { background: linear-gradient(180deg, #7b2ff7, #1f6feb); }
+  .trend-col.empty .trend-bar { background: #eceaf0; }
+  .trend-val { font-size: 10px; color: #999; margin-bottom: 3px; white-space: nowrap; }
+  .trend-col.current .trend-val { color: #7b2ff7; font-weight: 700; }
+  .trend-label { font-size: 10px; color: #aaa; margin-top: 5px; white-space: nowrap; }
+  .trend-col.current .trend-label { color: #7b2ff7; font-weight: 600; }
+  .trend-legend { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; font-size: 10px; color: #aaa; }
+  .trend-legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: linear-gradient(180deg, #7b2ff7, #1f6feb); margin-right: 4px; vertical-align: -1px; }
   .density-card { border-left: 4px solid #ddd; transition: background .2s; }
   .density-main { display: flex; align-items: center; gap: 14px; }
   .density-val { font-size: 30px; font-weight: 800; color: #333; line-height: 1; white-space: nowrap; }
@@ -316,36 +330,28 @@
       <button type="button" class="mini-btn primary" id="statsToday">回到今天</button>
     </div>
     <div class="period-card">
-      <div class="period-title" id="dTitle">今日</div>
-      <div class="period-metrics">
-        <div class="m"><div class="k">自强</div><div class="v self" id="dSelf">0</div></div>
-        <div class="m"><div class="k">吃苦</div><div class="v hard" id="dHard">0</div></div>
-        <div class="m"><div class="k">指数</div><div class="v idx" id="dIndex">—</div></div>
-      </div>
-    </div>
-    <div class="period-card">
       <div class="period-title" id="wTitle">本周</div>
-      <div class="period-metrics">
+      <div class="period-metrics two">
         <div class="m"><div class="k">自强</div><div class="v self" id="wSelf">0</div></div>
         <div class="m"><div class="k">吃苦</div><div class="v hard" id="wHard">0</div></div>
-        <div class="m"><div class="k">指数</div><div class="v idx" id="wIndex">—</div></div>
       </div>
+      <div class="trend" id="wTrend"></div>
     </div>
     <div class="period-card">
       <div class="period-title" id="mTitle">本月</div>
-      <div class="period-metrics">
+      <div class="period-metrics two">
         <div class="m"><div class="k">自强</div><div class="v self" id="mSelf">0</div></div>
         <div class="m"><div class="k">吃苦</div><div class="v hard" id="mHard">0</div></div>
-        <div class="m"><div class="k">指数</div><div class="v idx" id="mIndex">—</div></div>
       </div>
+      <div class="trend" id="mTrend"></div>
     </div>
     <div class="period-card">
       <div class="period-title" id="yTitle">本年</div>
-      <div class="period-metrics">
+      <div class="period-metrics two">
         <div class="m"><div class="k">自强</div><div class="v self" id="ySelf">0</div></div>
         <div class="m"><div class="k">吃苦</div><div class="v hard" id="yHard">0</div></div>
-        <div class="m"><div class="k">指数</div><div class="v idx" id="yIndex">—</div></div>
       </div>
+      <div class="trend" id="yTrend"></div>
     </div>
     <div class="period-card">
       <div class="period-title">累计</div>
@@ -355,7 +361,7 @@
         <div class="m"><div class="k">指数</div><div class="v idx" id="aIndex">—</div></div>
       </div>
     </div>
-    <div class="note">默认按今天查看；选日期后，今日 / 本周 / 本月 / 本年都按该日期所在周期显示。周起始日可在「设置」里切换。本周 / 本月 / 本年的指数为每日指数的算术平均，累计为总量相除；吃苦分为 0 时显示「—」。</div>
+    <div class="note">默认按今天查看；选日期后，本周 / 本月 / 本年都按该日期所在周期显示。趋势图展示相邻周期指数的变化，紫色高亮为当前周期，无记录或吃苦为 0 的周期显示「—」。周起始日可在「设置」里切换。指数为每日指数的算术平均，累计为总量相除。</div>
   </div>
   <div class="card density-card" id="densityCard">
     <h2>人生密度 <span class="link">按本年日均指数</span></h2>
@@ -905,6 +911,52 @@
     card.style.background = info.bg;
     card.style.borderLeftColor = info.color;
   }
+  function trendWindows(gran, sel){
+    var arr = [], i, s, e;
+    if (gran === 'w'){
+      var cur = startOfWeek(sel);
+      for (i = 7; i >= 0; i--){
+        s = new Date(cur); s.setDate(s.getDate() - i * 7); s.setHours(0,0,0,0);
+        e = new Date(s); e.setDate(e.getDate() + 6); e.setHours(23,59,59,999);
+        arr.push({ label: (s.getMonth()+1) + '/' + s.getDate(), start: s, end: e, current: i === 0 });
+      }
+    } else if (gran === 'm'){
+      for (i = 11; i >= 0; i--){
+        s = new Date(sel.getFullYear(), sel.getMonth() - i, 1);
+        e = new Date(s.getFullYear(), s.getMonth() + 1, 0, 23,59,59,999);
+        arr.push({ label: (s.getMonth()+1) + '月', start: s, end: e, current: i === 0 });
+      }
+    } else {
+      for (i = 5; i >= 0; i--){
+        var y = sel.getFullYear() - i;
+        arr.push({ label: String(y).slice(2), start: new Date(y,0,1), end: new Date(y,11,31,23,59,59,999), current: i === 0 });
+      }
+    }
+    return arr;
+  }
+  function renderTrend(prefix, gran, sel){
+    var box = document.getElementById(prefix + 'Trend');
+    if (!box) return;
+    var wins = trendWindows(gran, sel);
+    var vals = wins.map(function(w){ return avgDailyIndex(w.start, w.end); });
+    var max = 0;
+    vals.forEach(function(v){ if (v !== null && v > max) max = v; });
+    if (max <= 0) max = 1;
+    var html = '<div class="trend-bars">';
+    wins.forEach(function(w, i){
+      var v = vals[i];
+      var h = v === null ? 2 : Math.max(3, Math.round(v / max * 60));
+      var cls = 'trend-col' + (w.current ? ' current' : '') + (v === null ? ' empty' : '');
+      html += '<div class="' + cls + '">' +
+        '<div class="trend-val">' + (v === null ? '—' : fmtPctNum(v)) + '</div>' +
+        '<div class="trend-bar" style="height:' + h + 'px"></div>' +
+        '<div class="trend-label">' + w.label + '</div>' +
+      '</div>';
+    });
+    html += '</div><div class="trend-legend"><span><i class="swatch"></i>紫色为当前周期</span><span>柱越高指数越高</span></div>';
+    box.innerHTML = html;
+  }
+
   function renderStats(){
     ensureDraft();
     var sel = new Date(statsDate + 'T00:00:00');
@@ -914,10 +966,6 @@
     }
     var dateInput = document.getElementById('statsDate');
     if (dateInput && dateInput.value !== statsDate) dateInput.value = statsDate;
-
-    setPeriodRange('d', '今日', fmtCN(statsDate));
-    var dRec = (statsDate === todayStr() && hasDraftContent()) ? draft : state.records[statsDate];
-    setPeriod('d', dRec ? selfScore(dRec) : 0, dRec ? hardScore(dRec) : 0);
 
     var ws = startOfWeek(sel);
     var we = new Date(ws); we.setDate(we.getDate() + 6); we.setHours(23,59,59,999);
@@ -930,9 +978,12 @@
     setPeriodRange('m', '本月', sel.getFullYear() + '年' + (sel.getMonth() + 1) + '月');
     setPeriodRange('y', '本年', sel.getFullYear() + '年');
 
-    setPeriod('w', sumRange(ws, we, 'self'), sumRange(ws, we, 'hard'), fmtPctNum(avgDailyIndex(ws, we)));
-    setPeriod('m', sumRange(ms, me, 'self'), sumRange(ms, me, 'hard'), fmtPctNum(avgDailyIndex(ms, me)));
-    setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'), fmtPctNum(avgDailyIndex(ys, ye)));
+    setPeriod('w', sumRange(ws, we, 'self'), sumRange(ws, we, 'hard'));
+    setPeriod('m', sumRange(ms, me, 'self'), sumRange(ms, me, 'hard'));
+    setPeriod('y', sumRange(ys, ye, 'self'), sumRange(ys, ye, 'hard'));
+    renderTrend('w', 'w', sel);
+    renderTrend('m', 'm', sel);
+    renderTrend('y', 'y', sel);
     renderDensity(dailyIndexList(ys, ye), sel.getFullYear());
     setPeriod('a', sumAll('self'), sumAll('hard'));
     renderReview();
