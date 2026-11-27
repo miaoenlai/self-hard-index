@@ -139,15 +139,8 @@
   .cal-cell.lv3 { background: #d8c0ff; }
   .cal-cell.lv4 { background: #bd97ff; }
   .cal-cell.lv4 .cal-idx { color: #4b1485; }
-  .cal-cell.in-period { box-shadow: inset 0 0 0 2px rgba(31,111,235,.38); }
   .cal-legend { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: #999; }
   .cal-legend i { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
-  .cal-period-days { max-height: 240px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-  .cal-period-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-bottom: 1px solid #f5f5f5; font-size: 12px; }
-  .cal-period-row:last-child { border-bottom: none; }
-  .cal-period-row .s.self { color: #1f6feb; }
-  .cal-period-row .s.hard { color: #e8590c; }
-  .cal-period-row .idx { margin-left: auto; color: #7b2ff7; font-weight: 600; }
   .item {
     display: flex; align-items: center; justify-content: space-between;
     padding: 10px 0; border-bottom: 1px solid #f0f0f0; gap: 8px;
@@ -402,12 +395,6 @@
 <div id="tab-calendar" style="display:none">
   <div class="card">
     <h2>指数日历</h2>
-    <div class="seg" id="calGran">
-      <button type="button" data-gran="d" class="active">日</button>
-      <button type="button" data-gran="w">周</button>
-      <button type="button" data-gran="m">月</button>
-      <button type="button" data-gran="y">年</button>
-    </div>
     <div class="cal-nav">
       <div class="cal-title" id="calTitle"></div>
       <div class="cal-nav-btns">
@@ -427,10 +414,9 @@
       <span>高</span>
       <span style="margin-left:auto">虚线框 = 今日草稿</span>
     </div>
-    <div class="note" id="calGranNote">当前：日视图，每格显示当天指数。点下方「周 / 月 / 年」可查看所选日期所在周期的指数。</div>
   </div>
   <div class="card" id="calDetailCard">
-    <h2 id="calDetailTitle">当天详情</h2>
+    <h2>当天详情</h2>
     <div id="calDetail"></div>
   </div>
 </div>
@@ -603,7 +589,6 @@
   var calYear = new Date().getFullYear();
   var calMonth = new Date().getMonth();
   var calSelected = todayStr();
-  var calGran = 'd';
   var reviewGranularity = 'm';
 
   function saveState(){
@@ -1144,63 +1129,8 @@
     return { rec: rec, isDraft: isDraft };
   }
 
-  var CAL_GRAN_LABEL = { d:'当天', w:'本周', m:'本月', y:'本年' };
-  function calPeriodRange(key){
-    var sel = new Date(key + 'T00:00:00');
-    if (calGran === 'w'){
-      var ws = startOfWeek(sel);
-      var we = new Date(ws); we.setDate(we.getDate() + 6); we.setHours(23,59,59,999);
-      return { start: ws, end: we, title: fmtRange(ws, we) };
-    }
-    if (calGran === 'm'){
-      var ms = new Date(sel.getFullYear(), sel.getMonth(), 1);
-      var me = new Date(sel.getFullYear(), sel.getMonth()+1, 0, 23,59,59,999);
-      return { start: ms, end: me, title: sel.getFullYear() + '年' + (sel.getMonth()+1) + '月' };
-    }
-    var ys = new Date(sel.getFullYear(), 0, 1);
-    var ye = new Date(sel.getFullYear(), 11, 31, 23,59,59,999);
-    return { start: ys, end: ye, title: sel.getFullYear() + '年' };
-  }
-
-  function renderPeriodDetail(key){
-    var box = document.getElementById('calDetail');
-    var r = calPeriodRange(key);
-    var s = sumRange(r.start, r.end, 'self');
-    var h = sumRange(r.start, r.end, 'hard');
-    var avg = avgDailyIndex(r.start, r.end);
-    var label = CAL_GRAN_LABEL[calGran];
-    var arr = dailyIndexList(r.start, r.end);
-    var dailyRows = [];
-    Object.keys(state.records).sort().forEach(function(ds){
-      if (!inRange(ds, r.start, r.end)) return;
-      var rec = state.records[ds];
-      var rs = selfScore(rec), rh = hardScore(rec);
-      dailyRows.push(
-        '<div class="cal-period-row">' +
-          '<span>' + fmtMD(ds) + ' ' + weekdayName(new Date(ds + 'T00:00:00')) + '</span>' +
-          '<span class="s self">自 ' + fmt(rs) + '</span>' +
-          '<span class="s hard">吃 ' + fmt(rh) + '</span>' +
-          '<span class="idx">' + fmtPct(rs, rh) + '</span>' +
-        '</div>');
-    });
-    box.innerHTML =
-      '<div class="cal-detail-date">' + label + ' · ' + r.title + '</div>' +
-      '<div class="period-metrics" style="margin:0 0 6px">' +
-        '<div class="m"><div class="k">自强总分</div><div class="v self">' + fmt(s) + '</div></div>' +
-        '<div class="m"><div class="k">吃苦总分</div><div class="v hard">' + fmt(h) + '</div></div>' +
-        '<div class="m"><div class="k">' + label + '指数</div><div class="v idx">' + fmtPctNum(avg) + '</div></div>' +
-      '</div>' +
-      '<div class="note" style="margin:0 0 4px">' + label + '指数 = ' + label + '内每日指数的算术平均（只统计有记录且吃苦大于 0 的日子）；自强、吃苦为' + label + '总分。' + arr.length + ' 天有指数记录。</div>' +
-      (dailyRows.length
-        ? '<div class="cal-section-title">' + label + '每日指数</div><div class="cal-period-days">' + dailyRows.join('') + '</div>'
-        : '<div class="empty" style="padding:12px 0">' + label + '还没有记录</div>');
-  }
-
   function renderCalDetail(){
     var key = calSelected;
-    var titleEl = document.getElementById('calDetailTitle');
-    if (titleEl) titleEl.textContent = CAL_GRAN_LABEL[calGran] + '详情';
-    if (calGran !== 'd') { renderPeriodDetail(key); return; }
     var data = getDayData(key);
     var box = document.getElementById('calDetail');
     if (!data.rec) {
@@ -1245,11 +1175,6 @@
 
   function renderCalendar(){
     document.getElementById('calTitle').textContent = calYear + '年' + (calMonth + 1) + '月';
-    var noteEl = document.getElementById('calGranNote');
-    if (noteEl) noteEl.textContent = calGran === 'd'
-      ? '当前：日视图，每格显示当天指数。点上方「周 / 月 / 年」可查看所选日期所在周期的指数。'
-      : '当前：' + CAL_GRAN_LABEL[calGran] + '视图，蓝框标出所选日期所在的' + CAL_GRAN_LABEL[calGran] + '；下方显示该周期指数（每日指数算术平均）。';
-    var gRange = (calGran === 'd') ? null : calPeriodRange(calSelected);
     var names = (state.config.weekStart === 0)
       ? ['日','一','二','三','四','五','六']
       : ['一','二','三','四','五','六','日'];
@@ -1273,7 +1198,6 @@
       var cls = 'cal-cell' + (indexLevel(calcIndex(s, h)) ? ' ' + indexLevel(calcIndex(s, h)) : '');
       if (key === todayStr()) cls += ' today';
       if (data.isDraft) cls += ' draft';
-      if (gRange && inRange(key, gRange.start, gRange.end)) cls += ' in-period';
       html += '<div class="' + cls + '" data-date="' + key + '">' +
         '<div class="cal-day">' + i + '</div>' +
         '<div class="cal-idx">' + idx + '</div></div>';
@@ -1305,14 +1229,6 @@
     var cell = e.target.closest('.cal-cell[data-date]');
     if (!cell) return;
     calSelected = cell.getAttribute('data-date');
-    renderCalendar();
-  });
-  document.getElementById('calGran').addEventListener('click', function(e){
-    var btn = e.target.closest('button[data-gran]');
-    if (!btn) return;
-    calGran = btn.getAttribute('data-gran');
-    document.querySelectorAll('#calGran button').forEach(function(b){ b.classList.remove('active'); });
-    btn.classList.add('active');
     renderCalendar();
   });
   // ---------- 每日明细 / 历史 ----------
