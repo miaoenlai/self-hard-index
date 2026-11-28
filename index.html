@@ -162,6 +162,26 @@
     border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #1a1a1a;
   }
   .unit { font-size: 12px; color: #999; min-width: 24px; }
+  .seg-toggle { color: #7b2ff7; cursor: pointer; text-decoration: underline; }
+  .seg-panel { background: #faf9ff; border: 1px solid #ece7fa; border-radius: 10px; padding: 8px 10px 10px; margin-top: 8px; }
+  .seg-row { display: flex; align-items: flex-end; gap: 6px; margin-bottom: 8px; }
+  .seg-field { flex: 1; min-width: 0; }
+  .seg-field label { display: block; font-size: 11px; color: #888; margin-bottom: 4px; }
+  .seg-field input[type=time] {
+    width: 100%; box-sizing: border-box; border: 1px solid #e3e6ee; border-radius: 9px;
+    background: #fff; color: #333; text-align: center; padding: 8px 2px;
+    font-size: 20px; font-weight: 600; font-family: inherit; -webkit-appearance: none;
+  }
+  .seg-field input[type=time]:focus { outline: none; border-color: #7b2ff7; }
+  .seg-sep { color: #aaa; padding-bottom: 12px; font-size: 14px; }
+  .seg-sub { font-size: 12px; color: #7b2ff7; font-weight: 600; min-width: 44px; text-align: right; padding-bottom: 10px; }
+  .seg-del {
+    width: 28px; height: 32px; border-radius: 7px; border: 1px solid #e5e5e5; background: #fff;
+    color: #999; font-size: 17px; cursor: pointer; line-height: 1; margin-bottom: 2px;
+  }
+  .seg-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .seg-add { background: #fff; color: #7b2ff7; border: 1px dashed #b79bec; border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; }
+  .seg-total { font-size: 13px; color: #7b2ff7; font-weight: 700; }
   .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .summary-item { background: #fafbfc; border-radius: 10px; padding: 10px 12px; border: 1px solid #eee; }
   .summary-item .k { font-size: 12px; color: #888; }
@@ -285,7 +305,7 @@
       <span class="formula">自强吃苦指数 = 自强事件分总和 ÷ 吃苦分总和</span>
       <span class="val" id="todayIndex">—</span>
     </div>
-    <div class="note">自强分 = 各栏目之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；「保存今日」后界面全天保留今日内容，可随时修改再保存；跨过零点会自动清空，供填写新一天的数据。</div>
+    <div class="note">自强分 = 各栏目之和；吃苦分 = 各时长栏目之和。吃苦分为 0 时指数不计算。可在每类自强事件下方填写具体事项；吃苦栏目点「⏱ 用时间段计算」填写开始 / 结束时间，自动算时间差并合计（可加多段，跨午夜也支持）。「保存今日」后界面全天保留今日内容，可随时修改再保存；跨过零点会自动清空，供填写新一天的数据。</div>
   </div>
 
   <div class="card">
@@ -552,7 +572,8 @@
         records[k] = {
           self: (r.self && typeof r.self === 'object') ? r.self : {},
           hard: (r.hard && typeof r.hard === 'object') ? r.hard : {},
-          notes: (r.notes && typeof r.notes === 'object') ? r.notes : {}
+          notes: (r.notes && typeof r.notes === 'object') ? r.notes : {},
+          segments: (r.segments && typeof r.segments === 'object') ? r.segments : {}
         };
       }
     });
@@ -582,6 +603,7 @@
   var calMonth = new Date().getMonth();
   var calSelected = todayStr();
   var reviewGranularity = 'm';
+  var openSegments = {};
 
   function saveState(){
     localStorage.setItem(KEY, JSON.stringify(state));
@@ -596,9 +618,9 @@
   }
 
   function blankDraft(){
-    var d = { self: {}, hard: {}, notes: {} };
+    var d = { self: {}, hard: {}, notes: {}, segments: {} };
     state.config.selfItems.forEach(function(i){ d.self[i.id] = 0; d.notes[i.id] = ''; });
-    state.config.hardItems.forEach(function(i){ d.hard[i.id] = 0; });
+    state.config.hardItems.forEach(function(i){ d.hard[i.id] = 0; d.segments[i.id] = []; });
     return d;
   }
 
@@ -606,11 +628,40 @@
     if (!draft.notes || typeof draft.notes !== 'object') draft.notes = {};
   }
 
+  function ensureSegments(){
+    if (!draft.segments || typeof draft.segments !== 'object') draft.segments = {};
+    state.config.hardItems.forEach(function(i){
+      if (!Array.isArray(draft.segments[i.id])) draft.segments[i.id] = [];
+    });
+  }
+
+  // 单段时间差（小时），结束早于开始视为跨午夜；无效返回 null
+  function segDuration(start, end){
+    if (!start || !end) return null;
+    var a = String(start).split(':'), b = String(end).split(':');
+    if (a.length < 2 || b.length < 2) return null;
+    var am = (Number(a[0]) || 0) * 60 + (Number(a[1]) || 0);
+    var bm = (Number(b[0]) || 0) * 60 + (Number(b[1]) || 0);
+    var diff = bm - am;
+    if (diff < 0) diff += 24 * 60;
+    return round2(diff / 60);
+  }
+  function segTotal(id){
+    var segs = (draft.segments && draft.segments[id]) || [];
+    var total = 0;
+    segs.forEach(function(sg){
+      var d = segDuration(sg.start, sg.end);
+      if (d !== null) total += d;
+    });
+    return round2(total);
+  }
+
   function ensureDraft(){
     var t = todayStr();
     if (draft && draftDate === t) return draft;
     if (state.records[t]) draft = JSON.parse(JSON.stringify(state.records[t]));
     else draft = blankDraft();
+    ensureSegments();
     draftDate = t;
     return draft;
   }
@@ -689,16 +740,42 @@
     }).join('') || '<div class="empty">还没有自强栏目，去「设置」添加</div>';
 
     var hardBox = document.getElementById('hardItems');
+    ensureSegments();
     hardBox.innerHTML = state.config.hardItems.map(function(i){
       var v = Number(draft.hard[i.id]) || 0;
-      return '<div class="item">' +
-        '<div class="name">' + esc(i.name) + '<small>单位：小时</small></div>' +
-        '<div class="stepper">' +
-          '<button type="button" data-act="dec-h" data-id="' + esc(i.id) + '">−</button>' +
-          '<input type="number" min="0" step="any" value="' + v + '" data-input="hard" data-id="' + esc(i.id) + '">' +
-          '<span class="unit">h</span>' +
-          '<button type="button" data-act="inc-h" data-id="' + esc(i.id) + '">+</button>' +
-        '</div></div>';
+      var segs = draft.segments[i.id] || [];
+      var open = !!openSegments[i.id];
+      var panel = '';
+      if (open) {
+        var rows = segs.map(function(sg, idx){
+          var sub = segDuration(sg.start, sg.end);
+          return '<div class="seg-row">' +
+            '<div class="seg-field"><label>开始</label><input type="time" value="' + esc(sg.start || '') + '" data-seg-start="' + esc(i.id) + '" data-seg-idx="' + idx + '"></div>' +
+            '<span class="seg-sep">→</span>' +
+            '<div class="seg-field"><label>结束</label><input type="time" value="' + esc(sg.end || '') + '" data-seg-end="' + esc(i.id) + '" data-seg-idx="' + idx + '"></div>' +
+            '<span class="seg-sub" id="segSub_' + idx + '_' + esc(i.id) + '">' + (sub === null ? '—' : fmt(sub) + 'h') + '</span>' +
+            '<button type="button" class="seg-del" data-act="seg-del" data-id="' + esc(i.id) + '" data-idx="' + idx + '">×</button>' +
+          '</div>';
+        }).join('');
+        panel = '<div class="seg-panel">' +
+          rows +
+          '<div class="seg-actions">' +
+            '<button type="button" class="seg-add" data-act="seg-add" data-id="' + esc(i.id) + '">+ 添加时间段</button>' +
+            '<span class="seg-total" id="segTotal_' + esc(i.id) + '">合计 ' + fmt(segTotal(i.id)) + 'h</span>' +
+          '</div>' +
+        '</div>';
+      }
+      return '<div class="item-block">' +
+        '<div class="item">' +
+          '<div class="name">' + esc(i.name) + '<small>单位：小时 · <span class="seg-toggle" data-act="seg-toggle" data-id="' + esc(i.id) + '">' + (open ? '收起时间段' : '⏱ 用时间段计算') + '</span></small></div>' +
+          '<div class="stepper">' +
+            '<button type="button" data-act="dec-h" data-id="' + esc(i.id) + '">−</button>' +
+            '<input type="number" min="0" step="any" value="' + v + '" data-input="hard" data-id="' + esc(i.id) + '">' +
+            '<span class="unit">h</span>' +
+            '<button type="button" data-act="inc-h" data-id="' + esc(i.id) + '">+</button>' +
+          '</div>' +
+        '</div>' + panel +
+      '</div>';
     }).join('') || '<div class="empty">还没有吃苦栏目，去「设置」添加</div>';
 
     renderTotals();
@@ -716,19 +793,62 @@
   });
 
   document.getElementById('hardItems').addEventListener('click', function(e){
-    var btn = e.target.closest('button[data-act]');
+    ensureSegments();
+    var btn = e.target.closest('[data-act]');
     if (!btn) return;
+    var act = btn.getAttribute('data-act');
     var id = btn.getAttribute('data-id');
+
+    if (act === 'seg-toggle') {
+      openSegments[id] = !openSegments[id];
+      if (openSegments[id] && !draft.segments[id].length) draft.segments[id].push({ start:'', end:'' });
+      renderRecord();
+      return;
+    }
+    if (act === 'seg-add') {
+      draft.segments[id].push({ start:'', end:'' });
+      renderRecord();
+      return;
+    }
+    if (act === 'seg-del') {
+      var idx = Number(btn.getAttribute('data-idx'));
+      draft.segments[id].splice(idx, 1);
+      draft.hard[id] = segTotal(id);
+      renderRecord();
+      return;
+    }
+
     var step = state.config.hardStep;
     var v = Number(draft.hard[id]) || 0;
-    if (btn.getAttribute('data-act') === 'inc-h') v = round2(v + step);
-    else v = Math.max(0, round2(v - step));
+    if (act === 'inc-h') v = round2(v + step);
+    else if (act === 'dec-h') v = Math.max(0, round2(v - step));
+    else return;
     draft.hard[id] = v;
     renderRecord();
   });
 
   document.getElementById('hardItems').addEventListener('input', function(e){
-    var inp = e.target.closest('input[data-input="hard"]');
+    var t = e.target;
+    if (t.hasAttribute && (t.hasAttribute('data-seg-start') || t.hasAttribute('data-seg-end'))) {
+      var isStart = t.hasAttribute('data-seg-start');
+      var id = t.getAttribute(isStart ? 'data-seg-start' : 'data-seg-end');
+      var idx = Number(t.getAttribute('data-seg-idx'));
+      ensureSegments();
+      if (!draft.segments[id][idx]) draft.segments[id][idx] = { start:'', end:'' };
+      draft.segments[id][idx][isStart ? 'start' : 'end'] = t.value;
+      var sub = segDuration(draft.segments[id][idx].start, draft.segments[id][idx].end);
+      var subEl = document.getElementById('segSub_' + idx + '_' + id);
+      if (subEl) subEl.textContent = (sub === null ? '—' : fmt(sub) + 'h');
+      draft.hard[id] = segTotal(id);
+      var totalEl = document.getElementById('segTotal_' + id);
+      if (totalEl) totalEl.textContent = '合计 ' + fmt(draft.hard[id]) + 'h';
+      document.querySelectorAll('input[data-input="hard"]').forEach(function(inp){
+        if (inp.getAttribute('data-id') === id) inp.value = String(draft.hard[id]);
+      });
+      renderTotals();
+      return;
+    }
+    var inp = t.closest('input[data-input="hard"]');
     if (!inp) return;
     var v = Number(inp.value);
     draft.hard[inp.getAttribute('data-id')] = (isFinite(v) && v >= 0) ? round2(v) : 0;
